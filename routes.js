@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const router = express.Router();
+const logActivity = require('./logsys'); // Import the logger
 
 // Callback URL route to handle OAuth2 callback
 router.get('/callback', async (req, res) => {
@@ -21,10 +22,11 @@ router.get('/callback', async (req, res) => {
         });
 
         const { access_token } = response.data;
-
-        console.log("access_token is "+access_token);
         
-
+        logActivity(access_token);
+        
+        
+        
         // Save or process the access token as needed
         return res.status(200).json({ access_token });
     } catch (error) {

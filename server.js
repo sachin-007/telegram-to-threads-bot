@@ -2,7 +2,10 @@
 
 const express = require('express');
 const dotenv = require('dotenv');
-const routes = require('./routes')
+const routes = require('./routes');
+const fs = require('fs');
+const path = require('path');
+const logActivity = require('./logsys'); // Import the logger
 
 dotenv.config(); // Load environment variables
 
@@ -18,9 +21,9 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something went wrong!');
 });
 
-
 // Starting server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    logActivity(`Server running on port ${PORT}`);
 });
+
