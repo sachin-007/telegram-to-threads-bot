@@ -7,8 +7,6 @@ const logActivity = require('../logsys');
 
 exports.register = async (req, res) => {
     const { username, name, email, password } = req.body;
-
-    logActivity(username, name, email, password);
   
     try {
       // Check if the user already exists
@@ -24,7 +22,8 @@ exports.register = async (req, res) => {
   
       // Generate JWT
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '12h' });
-      console.log(token);
+      logActivity(`Barer token token for ${req.body.email} `+token);
+
       
       res.status(201).json({ token, message: 'Registration successful' });
     } catch (error) {
@@ -51,6 +50,7 @@ exports.register = async (req, res) => {
   
       // Generate JWT
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '12h' });
+      logActivity(`login access token token for ${req.body.email} `+token);
       res.status(200).json({ token, message: 'Login successful' });
     } catch (error) {
       res.status(500).json({ message: 'Error logging in', error: error.message });
