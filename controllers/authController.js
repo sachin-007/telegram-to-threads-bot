@@ -62,16 +62,10 @@ exports.register = async (req, res) => {
   };
   
 
-
-const scope = 'threads_basic,threads_content_publish';
-const THREAD_APP_ID=process.env.THREAD_APP_ID;
-const REDIRECT_URI=process.env.REDIRECT_URI;
-
-
 // Step 1: Redirect to Authorization URL
 exports.getAuthorizationUrl = (req, res) => {
-  const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=threads_basic,threads_content_publish&response_type=code`;
-  logActivity(authUrl);
+  const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}&response_type=code`;
+  logActivity(`Generated Authorization URL: ${authUrl}`); // Log the authorization URL
   res.redirect(authUrl);
 };
 
@@ -80,26 +74,29 @@ exports.handleCallback = async (req, res) => {
   const { code } = req.query;
 
   if (!code) {
+      logActivity('Authorization code not provided.'); // Log the error
       return res.status(400).send('No authorization code provided.');
   }
 
   try {
       const response = await axios.post('https://graph.threads.net/oauth/access_token', null, {
           params: {
-              client_id: config.THREADS_APP_ID,
+              client_id: THREAD_APP_ID,
               client_secret: config.THREADS_APP_SECRET,
               grant_type: 'authorization_code',
-              redirect_uri: config.REDIRECT_URI,
+              redirect_uri: REDIRECT_URI,
               code,
           },
       });
 
       const { access_token, user_id } = response.data;
+      logActivity(`Successfully exchanged code for token. User ID: ${user_id}, Access Token: ${access_token}`); // Log the success
 
       // Handle successful authentication
       res.send(`Access Token: ${access_token}, User ID: ${user_id}`);
   } catch (error) {
-      console.error('Error exchanging code for token:', error.response.data);
+      const errorMsg = error.response?.data || 'Unknown error';
+      logActivity(`Error exchanging code for token: ${JSON.stringify(errorMsg)}`); // Log the error
       res.status(500).send('Error exchanging code for token.');
   }
 };
