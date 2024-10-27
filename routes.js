@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const router = express.Router();
-const logActivity = require('./logsys'); // Import the logger
+const logActivity = require('./logActivity'); // Import the logger
 
 // Callback URL route to handle OAuth2 callback
 router.get('/callback', async (req, res) => {

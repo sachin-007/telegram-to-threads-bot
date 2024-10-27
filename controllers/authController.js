@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const AdminUser = require('../models/adminUser');
-const logActivity = require('../logsys');
+const logActivity = require('../logActivity');
 
 
 exports.register = async (req, res) => {
@@ -27,6 +27,7 @@ exports.register = async (req, res) => {
       
       res.status(201).json({ token, message: 'Registration successful' });
     } catch (error) {
+      await logActivity('Error registering user', { error: error.message });
       res.status(500).json({ message: 'Error registering user', error: error.message });
     }
   };
@@ -53,6 +54,7 @@ exports.register = async (req, res) => {
       logActivity(`login access token token for ${req.body.email} `+token);
       res.status(200).json({ token, message: 'Login successful' });
     } catch (error) {
+      await logActivity('Error logging in', { error: error.message });
       res.status(500).json({ message: 'Error logging in', error: error.message });
     }
   };
@@ -93,6 +95,7 @@ exports.callback = async (req, res) => {
     res.send('Authorization code saved successfully');
   } catch (error) {
     console.error(error);
+    await logActivity('Failed to save authorization code', { error: error.message });
     res.status(500).send('Failed to save authorization code');
   }
 };
@@ -123,6 +126,7 @@ exports.getAccessToken = async (req, res) => {
     res.send('Access token saved successfully');
   } catch (error) {
     console.error(error);
+    await logActivity('Failed to get access token', { error: error.message });
     res.status(500).send('Failed to get access token');
   }
 };
@@ -168,6 +172,7 @@ exports.handleOAuthCallback = async (req, res) => {
       res.json({ access_token, user_id });
   } catch (error) {
       console.error('Error exchanging code for token:', error.response?.data || error.message);
+      await logActivity('Error exchanging code for token:', { error: error.message }+"\nrespo error"+{error:error.response?.data});
       res.status(500).json({ error: 'Failed to exchange code for token' });
   }
 };

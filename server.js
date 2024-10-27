@@ -38,7 +38,7 @@ const authRoutes = require('./routes/authRoutes');
 const telegramRoutes = require('./routes/telegramRoutes');
 const fs = require('fs');
 const path = require('path');
-const logActivity = require('./logsys'); // Import the logger
+const logActivity = require('./logActivity');
 
 dotenv.config();
 connectDB();
