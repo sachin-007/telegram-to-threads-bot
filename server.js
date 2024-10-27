@@ -67,13 +67,17 @@ const PORT = process.env.PORT || 3000;
 
 // Step 1: Redirect to Authorization URL
 app.get('/auth', (req, res) => {
-    const authUrl = `https://threads.net/oauth/authorize?client_id=${process.env.THREADS_APP_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&scope=threads_basic,threads_content_publish&response_type=code`;
+    const authUrl = `https://threads.net/oauth/authorize?client_id=${process.env.THREADS_APP_ID}&redirect_uri=${process.env.REDIRECT_URI}&scope=threads_basic,threads_content_publish&response_type=code`;
+    console.log(authUrl);
+    
     res.redirect(authUrl);
 });
 
 // Step 2: Handle Redirect and Exchange Code for Token
 app.get('/callback', async (req, res) => {
     const { code } = req.query;
+    console.log(req.query);
+    
 
     if (!code) {
         return res.status(400).send('No authorization code provided.');
