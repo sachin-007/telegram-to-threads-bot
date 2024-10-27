@@ -127,3 +127,47 @@ exports.getAccessToken = async (req, res) => {
   }
 };
 
+
+// Replace these values with your actual values
+// authController.js
+const CLIENT_ID = process.env.THREADS_APP_ID;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+const scope = 'threads_basic,threads_content_publish';
+
+// Start the OAuth authorization process
+exports.startOAuth = (req, res) => {
+  const scope = 'threads_basic,threads_content_publish'; // Define the required scopes
+  const authUrl = `https://threads.net/oauth/authorize?client_id=${process.env.THREADS_APP_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+  res.redirect(authUrl);
+};
+
+// Handle the callback and exchange the authorization code for an access token
+exports.handleOAuthCallback = async (req, res) => {
+  const { code, error, error_reason, error_description } = req.query;
+
+  if (error) {
+      // Handle error (e.g., user denied authorization)
+      return res.status(400).json({ error, error_reason, error_description });
+  }
+
+  // Proceed with exchanging the code for an access token
+  try {
+      const url = 'https://graph.threads.net/oauth/access_token';
+
+      const params = new URLSearchParams();
+      params.append('client_id', process.env.THREADS_APP_ID);
+      params.append('client_secret', process.env.THREADS_APP_SECRET);
+      params.append('code', code);
+      params.append('grant_type', 'authorization_code');
+      params.append('redirect_uri', process.env.REDIRECT_URI);
+
+      const response = await axios.post(url, params);
+      const { access_token, user_id } = response.data;
+
+      // Send the access token and user ID in the response
+      res.json({ access_token, user_id });
+  } catch (error) {
+      console.error('Error exchanging code for token:', error.response?.data || error.message);
+      res.status(500).json({ error: 'Failed to exchange code for token' });
+  }
+};
