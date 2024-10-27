@@ -5,7 +5,8 @@ const adminUserSchema = new mongoose.Schema({
   name: String,
   email: String,
   password: String,
-  access_token: String
+  access_token: String,
+  code: { type: String }
 });
 
 module.exports = mongoose.model('AdminUser', adminUserSchema);
