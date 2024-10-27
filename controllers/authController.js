@@ -67,7 +67,7 @@ const REDIRECT_URI=process.env.REDIRECT_URI;
 
 // Step 1: Redirect to Authorization URL
 exports.getAuthorizationUrl = (req, res) => {
-  const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}&response_type=code`;
+  const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${REDIRECT_URI}&scope=${scope}&response_type=code`;
   logActivity(`Generated Authorization URL: ${authUrl}`); // Log the authorization URL
   res.redirect(authUrl);
 };

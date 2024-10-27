@@ -1,53 +1,25 @@
-// // // server.js or app.js
-
-// // const express = require('express');
-// // const dotenv = require('dotenv');
-// // const routes = require('./routes');
-// // const fs = require('fs');
-// // const path = require('path');
-// // const logActivity = require('./logsys'); // Import the logger
-
-// // dotenv.config(); // Load environment variables
-
-// // const app = express();
-
-// // // Middleware and Routes
-// // app.use(express.json());
-// // app.use('/api', routes); // Define API routes
-
-// // // Error Handling Middleware
-// // app.use((err, req, res, next) => {
-// //     console.error(err.stack);
-// //     res.status(500).send('Something went wrong!');
-// // });
-
-// // // Starting server
-// // const PORT = process.env.PORT || 5000;
-// // app.listen(PORT, () => {
-// //     logActivity(`Server running on port ${PORT}`);
-// // });
-
-
-
-
+// // server.js or app.js
 
 // const express = require('express');
 // const dotenv = require('dotenv');
-// const connectDB = require('./config/db');
-// const authRoutes = require('./routes/authRoutes');
-// const telegramRoutes = require('./routes/telegramRoutes');
+// const routes = require('./routes');
 // const fs = require('fs');
 // const path = require('path');
-// const logActivity = require('./logActivity');
+// const logActivity = require('./logsys'); // Import the logger
 
-// dotenv.config();
-// connectDB();
+// dotenv.config(); // Load environment variables
 
 // const app = express();
-// app.use(express.json());
 
-// app.use('/api/auth', authRoutes);
-// app.use('/api/telegram', telegramRoutes);
+// // Middleware and Routes
+// app.use(express.json());
+// app.use('/api', routes); // Define API routes
+
+// // Error Handling Middleware
+// app.use((err, req, res, next) => {
+//     console.error(err.stack);
+//     res.status(500).send('Something went wrong!');
+// });
 
 // // Starting server
 // const PORT = process.env.PORT || 5000;
@@ -55,56 +27,84 @@
 //     logActivity(`Server running on port ${PORT}`);
 // });
 
-// index.js
+
+
+
+
 const express = require('express');
-const axios = require('axios');
 const dotenv = require('dotenv');
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+const telegramRoutes = require('./routes/telegramRoutes');
+const fs = require('fs');
+const path = require('path');
+const logActivity = require('./logActivity');
 
 dotenv.config();
+connectDB();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(express.json());
 
-// Step 1: Redirect to Authorization URL
-app.get('/auth', (req, res) => {
-    const authUrl = `https://threads.net/oauth/authorize?client_id=${process.env.THREADS_APP_ID}&redirect_uri=${process.env.REDIRECT_URI}&scope=threads_basic,threads_content_publish&response_type=code`;
-    console.log(authUrl);
-    
-    res.redirect(authUrl);
-});
+app.use('/api/auth', authRoutes);
+app.use('/api/telegram', telegramRoutes);
 
-// Step 2: Handle Redirect and Exchange Code for Token
-app.get('/callback', async (req, res) => {
-    const { code } = req.query;
-    console.log(req.query);
-    
-
-    if (!code) {
-        return res.status(400).send('No authorization code provided.');
-    }
-
-    try {
-        const response = await axios.post('https://graph.threads.net/oauth/access_token', null, {
-            params: {
-                client_id: process.env.THREADS_APP_ID,
-                client_secret: process.env.THREADS_APP_SECRET,
-                grant_type: 'authorization_code',
-                redirect_uri: process.env.REDIRECT_URI,
-                code,
-            },
-        });
-
-        const { access_token, user_id } = response.data;
-
-        // Handle successful authentication
-        res.send(`Access Token: ${access_token}, User ID: ${user_id}`);
-    } catch (error) {
-        console.error('Error exchanging code for token:', error.response.data);
-        res.status(500).send('Error exchanging code for token.');
-    }
-});
-
-// Start the server
+// Starting server
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    logActivity(`Server running on port ${PORT}`);
 });
+
+// // index.js
+// const express = require('express');
+// const axios = require('axios');
+// const dotenv = require('dotenv');
+
+// dotenv.config();
+
+// const app = express();
+// const PORT = process.env.PORT || 3000;
+
+// // Step 1: Redirect to Authorization URL
+// app.get('/auth', (req, res) => {
+//     const authUrl = `https://threads.net/oauth/authorize?client_id=${process.env.THREADS_APP_ID}&redirect_uri=${process.env.REDIRECT_URI}&scope=threads_basic,threads_content_publish&response_type=code`;
+//     console.log(authUrl);
+    
+//     res.redirect(authUrl);
+// });
+
+// // Step 2: Handle Redirect and Exchange Code for Token
+// app.get('/callback', async (req, res) => {
+//     const { code } = req.query;
+//     console.log(req.query);
+    
+
+//     if (!code) {
+//         return res.status(400).send('No authorization code provided.');
+//     }
+
+//     try {
+//         const response = await axios.post('https://graph.threads.net/oauth/access_token', null, {
+//             params: {
+//                 client_id: process.env.THREADS_APP_ID,
+//                 client_secret: process.env.THREADS_APP_SECRET,
+//                 grant_type: 'authorization_code',
+//                 redirect_uri: process.env.REDIRECT_URI,
+//                 code,
+//             },
+//         });
+
+//         const { access_token, user_id } = response.data;
+
+//         // Handle successful authentication
+//         res.send(`Access Token: ${access_token}, User ID: ${user_id}`);
+//     } catch (error) {
+//         console.error('Error exchanging code for token:', error.response.data);
+//         res.status(500).send('Error exchanging code for token.');
+//     }
+// });
+
+// // Start the server
+// app.listen(PORT, () => {
+//     console.log(`Server is running on http://localhost:${PORT}`);
+// });
