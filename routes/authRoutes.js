@@ -12,8 +12,8 @@ router.post('/login', authController.login);
 
 
 // Define routes for OAuth
-router.get('/auth', authController.startOAuth);
-router.get('/auth/callback', authController.handleOAuthCallback);
+router.get('/auth', authController.getAuthorizationUrl);
+router.get('/auth/callback', authController.handleCallback);
 
 module.exports = router;
 

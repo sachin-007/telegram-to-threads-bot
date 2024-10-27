@@ -62,177 +62,87 @@ exports.register = async (req, res) => {
   };
   
 
-// exports.callback = async (req, res) => {
-//   const { code } = req.query;
-//   try {
-//     const response = await axios.post('https://threads.net/oauth/authorize', {
-//     // const response = await axios.post('https://api.threads.net/oauth/access_token', {
-//       client_id: process.env.THREAD_APP_ID,
-//       client_secret: process.env.CLIENT_SECRET,
-//       redirect_uri: process.env.CALLBACK_URL,
-//       code,
-//       // grant_type: 'authorization_code'
-//     });
-//     const accessToken = response.data.access_token;
 
-//     await AdminUser.updateOne({ username: "admin" }, { access_token: accessToken });
-//     res.send('Access token saved successfully');
-//   } catch (error) {
-//     res.status(500).send('Failed to get access token');
-//   }
-// };
+const scope = 'threads_basic,threads_content_publish';
+const THREAD_APP_ID=process.env.THREAD_APP_ID;
+const REDIRECT_URI=process.env.REDIRECT_URI;
 
 
+// Step 1: Redirect to Authorization URL
+exports.getAuthorizationUrl = (req, res) => {
+  const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=threads_basic,threads_content_publish&response_type=code`;
+  logActivity(authUrl);
+  res.redirect(authUrl);
+};
 
-exports.callback = async (req, res) => {
-  const { code } = req.query; // Capture the authorization code
+// Step 2: Handle Redirect and Exchange Code for Token
+exports.handleCallback = async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+      return res.status(400).send('No authorization code provided.');
+  }
 
   try {
-    // Store the code in the database for the user
-    await AdminUser.updateOne(
-      { username: "admin" }, // Update for the specific user
-      { code: code }
-    );
-    
-    res.send('Authorization code saved successfully');
+      const response = await axios.post('https://graph.threads.net/oauth/access_token', null, {
+          params: {
+              client_id: config.THREADS_APP_ID,
+              client_secret: config.THREADS_APP_SECRET,
+              grant_type: 'authorization_code',
+              redirect_uri: config.REDIRECT_URI,
+              code,
+          },
+      });
+
+      const { access_token, user_id } = response.data;
+
+      // Handle successful authentication
+      res.send(`Access Token: ${access_token}, User ID: ${user_id}`);
   } catch (error) {
-    console.error(error);
-    await logActivity('Failed to save authorization code', { error: error.message });
-    res.status(500).send('Failed to save authorization code');
+      console.error('Error exchanging code for token:', error.response.data);
+      res.status(500).send('Error exchanging code for token.');
   }
 };
 
 
-// exports.getAccessToken = async (req, res) => {
-//   try {
-//     // Find the user to get the stored code
-//     const adminUser = await AdminUser.findOne({ username: "admin" });
-
-//     // Exchange the code for an access token
-//     const response = await axios.post('https://api.threads.net/oauth/access_token', {
-//       client_id: process.env.THREAD_APP_ID,
-//       client_secret: process.env.CLIENT_SECRET,
-//       redirect_uri: process.env.REDIRECT_URI,
-//       code: adminUser.code, // Use the stored code
-//       grant_type: 'authorization_code'
-//     });
-    
-//     const accessToken = response.data.access_token;
-
-//     // Update the access token in the database
-//     await AdminUser.updateOne(
-//       { username: "admin" },
-//       { access_token: accessToken }
-//     );
-
-//     res.send('Access token saved successfully');
-//   } catch (error) {
-//     console.error(error);
-//     await logActivity('Failed to get access token', { error: error.message });
-//     res.status(500).send('Failed to get access token');
-//   }
-// };
-
-
-// // Replace these values with your actual values
-// // authController.js
-// const THREAD_APP_ID = process.env.THREAD_APP_ID;
-// const REDIRECT_URI = process.env.REDIRECT_URI;
-// const scope = 'threads_basic,threads_content_publish';
-
 // // Start the OAuth authorization process
 // exports.startOAuth = (req, res) => {
-//   const scope = 'threads_basic,threads_content_publish'; // Define the required scopes
-//   const authUrl = `https://threads.net/oauth/authorize?client_id=${process.env.THREAD_APP_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-//   logActivity(authUrl);
+//   const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+//   logActivity("Redirecting to auth URL", authUrl);
 //   res.redirect(authUrl);
 // };
 
 // // Handle the callback and exchange the authorization code for an access token
 // exports.handleOAuthCallback = async (req, res) => {
 //   const { code, error, error_reason, error_description } = req.query;
-//   logActivity("code", {code}
-// ,"error", {error}
-// ,"error_reason", {error_reason}
-// ,"error_description", {error_description})
+//   logActivity("OAuth Callback", { code, error, error_reason, error_description });
 
 //   if (error) {
 //       // Handle error (e.g., user denied authorization)
-//       await logActivity('error in start callback', { error, error_reason, error_description });
+//       await logActivity('Error in OAuth callback', { error, error_reason, error_description });
 //       return res.status(400).json({ error, error_reason, error_description });
 //   }
 
 //   // Proceed with exchanging the code for an access token
 //   try {
 //       const url = 'https://graph.threads.net/oauth/access_token';
-
-//       const params = new URLSearchParams();
-//       params.append('client_id', process.env.THREADS_APP_ID);
-//       params.append('client_secret', process.env.THREADS_APP_SECRET);
-//       params.append('code', code);
-//       params.append('grant_type', 'authorization_code');
-//       params.append('redirect_uri', process.env.REDIRECT_URI);
+//       const params = new URLSearchParams({
+//           client_id: THREAD_APP_ID,
+//           client_secret: process.env.THREADS_APP_SECRET,
+//           code: code,
+//           grant_type: 'authorization_code',
+//           redirect_uri: REDIRECT_URI
+//       });
 
 //       const response = await axios.post(url, params);
 //       const { access_token, user_id } = response.data;
-//       logActivity('access token : ', { access_token });
+//       logActivity('Received access token', { access_token });
 
 //       // Send the access token and user ID in the response
 //       res.json({ access_token, user_id });
 //   } catch (error) {
 //       console.error('Error exchanging code for token:', error.response?.data || error.message);
-//       await logActivity('Error exchanging code for token:', { error: error.message }+"\nrespo error"+{error:error.response?.data});
+//       await logActivity('Error exchanging code for token', { error: error.message, responseError: error.response?.data });
 //       res.status(500).json({ error: 'Failed to exchange code for token' });
 //   }
 // };
-
-
-const scope = 'threads_basic,threads_content_publish';
-
-
-
-const THREAD_APP_ID=process.env.THREAD_APP_ID;
-const REDIRECT_URI=process.env.REDIRECT_URI;
-
-
-// Start the OAuth authorization process
-exports.startOAuth = (req, res) => {
-  const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-  logActivity("Redirecting to auth URL", authUrl);
-  res.redirect(authUrl);
-};
-
-// Handle the callback and exchange the authorization code for an access token
-exports.handleOAuthCallback = async (req, res) => {
-  const { code, error, error_reason, error_description } = req.query;
-  logActivity("OAuth Callback", { code, error, error_reason, error_description });
-
-  if (error) {
-      // Handle error (e.g., user denied authorization)
-      await logActivity('Error in OAuth callback', { error, error_reason, error_description });
-      return res.status(400).json({ error, error_reason, error_description });
-  }
-
-  // Proceed with exchanging the code for an access token
-  try {
-      const url = 'https://graph.threads.net/oauth/access_token';
-      const params = new URLSearchParams({
-          client_id: THREAD_APP_ID,
-          client_secret: process.env.THREADS_APP_SECRET,
-          code: code,
-          grant_type: 'authorization_code',
-          redirect_uri: REDIRECT_URI
-      });
-
-      const response = await axios.post(url, params);
-      const { access_token, user_id } = response.data;
-      logActivity('Received access token', { access_token });
-
-      // Send the access token and user ID in the response
-      res.json({ access_token, user_id });
-  } catch (error) {
-      console.error('Error exchanging code for token:', error.response?.data || error.message);
-      await logActivity('Error exchanging code for token', { error: error.message, responseError: error.response?.data });
-      res.status(500).json({ error: 'Failed to exchange code for token' });
-  }
-};
