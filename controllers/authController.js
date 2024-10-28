@@ -64,6 +64,7 @@ exports.register = async (req, res) => {
   const scope = 'threads_basic,threads_content_publish';
 const THREAD_APP_ID=process.env.THREAD_APP_ID;
 const REDIRECT_URI=process.env.REDIRECT_URI;
+const THREADS_APP_SECRET=process.env.THREADS_APP_SECRET;
 
 // Step 1: Redirect to Authorization URL
 exports.getAuthorizationUrl = (req, res) => {
