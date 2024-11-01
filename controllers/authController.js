@@ -90,21 +90,37 @@ exports.startOAuth = (req, res) => {
 
 // Step 2: Handle Redirect and Exchange Code for Token
 exports.handleCallback = async (req, res) => {
-  const { code } = req.query;
+  const { code, error, error_description } = req.query;
 
+  // Check if an error was provided in the query parameters
+  if (error) {
+    logActivity(
+      `OAuth error: ${error_description || "No description available."}`
+    ); // Log the OAuth error details
+    return res
+      .status(400)
+      .json({
+        message: `OAuth error: ${
+          error_description || "No description available."
+        }`,
+      });
+  }
+
+  // Check if the authorization code is provided
   if (!code) {
-    logActivity("Authorization code not provided."); // Log the error
-    return res.status(400).send("No authorization code provided.");
+    logActivity("Authorization code not provided."); // Log the missing code error
+    return res.status(400).json({ message: "No authorization code provided." });
   }
 
   try {
+    // Exchange the authorization code for an access token
     const response = await axios.post(
       "https://graph.threads.net/oauth/access_token",
       null,
       {
         params: {
           client_id: THREAD_APP_ID,
-          client_secret: config.THREADS_APP_SECRET,
+          client_secret: THREADS_APP_SECRET,
           grant_type: "authorization_code",
           redirect_uri: REDIRECT_URI,
           code,
@@ -112,20 +128,44 @@ exports.handleCallback = async (req, res) => {
       }
     );
 
+    // Extract the access token and user ID
     const { access_token, user_id } = response.data;
     logActivity(
       `Successfully exchanged code for token. User ID: ${user_id}, Access Token: ${access_token}`
-    ); // Log the success
+    ); // Log success
 
-    // Handle successful authentication
-    res.send(`Access Token: ${access_token}, User ID: ${user_id}`);
+    // Respond with the access token and user ID
+    res.json({ access_token, user_id });
   } catch (error) {
-    const errorMsg = error.response?.data || "Unknown error";
-    logActivity(`Error exchanging code for token: ${JSON.stringify(errorMsg)}`); // Log the error
-    res.status(500).send("Error exchanging code for token.");
+    if (error.response) {
+      // If the error response comes from the API
+      const { status, data } = error.response;
+      logActivity(
+        `API error: Status ${status}, Response: ${JSON.stringify(data)}`
+      ); // Log API response error details
+      res
+        .status(status)
+        .json({ message: "Error exchanging code for token.", details: data });
+    } else if (error.request) {
+      // If the request was made but no response was received
+      logActivity(
+        "No response received from Threads API. Possible network error."
+      ); // Log network error
+      res
+        .status(500)
+        .json({ message: "No response received from Threads API." });
+    } else {
+      // If another error occurred
+      logActivity(`Unknown error: ${error.message}`); // Log unexpected error
+      res
+        .status(500)
+        .json({
+          message: "An unknown error occurred.",
+          details: error.message,
+        });
+    }
   }
 };
-
 // // Start the OAuth authorization process
 // exports.startOAuth = (req, res) => {
 //   const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&response_type=code`;
