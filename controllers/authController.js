@@ -81,10 +81,10 @@ const forceReauth = true;
 exports.startOAuth = (req, res) => {
   const authUrl = `https://www.threads.net/oauth/authorize/?redirect_uri=${encodeURIComponent(
     REDIRECT_URI
-  )}&client_id=${THREAD_APP_ID}&response_type=code&force_reauth=${forceReauth}&scope=${encodeURIComponent(
+  )}&client_id=${THREAD_APP_ID}&response_type=code&scope=${encodeURIComponent(
     scope
   )}`;
-  logActivity("authUrl is = "+authUrl);
+  logActivity("authUrl is = " + authUrl);
   res.redirect(authUrl);
 };
 
@@ -97,13 +97,11 @@ exports.handleCallback = async (req, res) => {
     logActivity(
       `OAuth error: ${error_description || "No description available."}`
     ); // Log the OAuth error details
-    return res
-      .status(400)
-      .json({
-        message: `OAuth error: ${
-          error_description || "No description available."
-        }`,
-      });
+    return res.status(400).json({
+      message: `OAuth error: ${
+        error_description || "No description available."
+      }`,
+    });
   }
 
   // Check if the authorization code is provided
@@ -157,12 +155,10 @@ exports.handleCallback = async (req, res) => {
     } else {
       // If another error occurred
       logActivity(`Unknown error: ${error.message}`); // Log unexpected error
-      res
-        .status(500)
-        .json({
-          message: "An unknown error occurred.",
-          details: error.message,
-        });
+      res.status(500).json({
+        message: "An unknown error occurred.",
+        details: error.message,
+      });
     }
   }
 };
