@@ -84,7 +84,7 @@ exports.startOAuth = (req, res) => {
   )}&client_id=${THREAD_APP_ID}&response_type=code&force_reauth=${forceReauth}&scope=${encodeURIComponent(
     scope
   )}`;
-
+  logActivity("authUrl is = "+authUrl);
   res.redirect(authUrl);
 };
 
