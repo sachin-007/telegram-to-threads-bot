@@ -16,10 +16,14 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "fs": "^0.0.1-security",
+    "input": "^1.0.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.2",
+    "node-telegram-bot-api": "^0.66.0",
     "nodemon": "^3.1.7",
     "telegraf": "^4.16.3",
-    "telegram-bot-api": "^2.0.1"
+    "telegram": "^2.26.6",
+    "telegram-bot-api": "^2.0.1",
+    "telegram-threads-bot": "file:"
   }
 }
