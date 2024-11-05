@@ -104,6 +104,7 @@ exports.startOAuth = async (req, res) => {
 
 // Step 2: Handle Redirect and Exchange Code for Token
 exports.handleCallback = async (req, res) => {
+  const email = req.session.email;
   const { code, error, error_description } = req.query;
 
   // Check if an error was provided in the query parameters
