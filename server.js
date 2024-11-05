@@ -43,13 +43,13 @@ connectDB();
 const app = express();
 app.use(express.json());
 
-// Session middleware configuration
+// Configure express-session
 app.use(
   session({
     secret: "your_secret_key", // Replace with a strong secret key
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false }, // Set to true if using HTTPS
+    resave: false, // Prevents saving session if unmodified
+    saveUninitialized: true, // Creates a session even if no data is stored
+    cookie: { secure: false }, // Set to true if using HTTPS in production
   })
 );
 
