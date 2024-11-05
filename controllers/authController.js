@@ -64,8 +64,10 @@ exports.login = async (req, res) => {
 const scope =
   "threads_basic,threads_content_publish,threads_manage_insights,threads_manage_replies,threads_read_replies";
 const REDIRECT_URI = process.env.REDIRECT_URI;
-const THREAD_APP_ID = process.env.THREAD_APP_ID;
-const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
+
+// const THREAD_APP_ID = process.env.THREAD_APP_ID;
+// const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
+
 // const forceReauth = true;
 
 // // Step 1: Redirect to Authorization URL
@@ -78,7 +80,7 @@ const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
 // Start the OAuth authorization process
 exports.startOAuth = async (req, res) => {
   const email = req.session.email;
-  const { THREAD_APP_ID, THREADS_APP_SECRET } = req.body;
+  var { THREAD_APP_ID, THREADS_APP_SECRET } = req.body;
 
   if (!THREAD_APP_ID || !THREADS_APP_SECRET) {
     return res.status(400).json({ error: "Required parameters are missing" });
@@ -87,6 +89,11 @@ exports.startOAuth = async (req, res) => {
   const updatedUser = await AdminUser.findOneAndUpdate(
     { email },
     { THREAD_APP_ID, THREADS_APP_SECRET }
+  );
+
+  const user = await AdminUser.findOne(
+    { email },
+    "THREAD_APP_ID THREADS_APP_SECRET"
   );
 
   const authUrl = `https://www.threads.net/oauth/authorize/?redirect_uri=${encodeURIComponent(
@@ -179,6 +186,7 @@ exports.handleCallback = async (req, res) => {
     }
   }
 };
+
 // // Start the OAuth authorization process
 // exports.startOAuth = (req, res) => {
 //   const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&response_type=code`;
