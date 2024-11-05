@@ -51,12 +51,8 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-
-    // Generate JWT
-    // const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-    //   expiresIn: "12h",
-    // });
     req.session.email = email;
+
     logActivity("Login successful");
     res.status(200).json({ message: "Login successful" });
   } catch (error) {
@@ -145,6 +141,8 @@ exports.handleCallback = async (req, res) => {
     logActivity(
       `Successfully exchanged code for token. User ID: ${user_id}, Access Token: ${access_token}`
     ); // Log success
+
+    const email = req.session.email;
 
     const updatedUser = await AdminUser.findOneAndUpdate(
       { email },

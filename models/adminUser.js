@@ -11,6 +11,9 @@ const adminUserSchema = new mongoose.Schema(
     THREADS_APP_SECRET: { type: String },
     access_token: { type: String, default: null },
     user_id: { type: String, default: null },
+    temp1: { type: String, default: null },
+    temp2: { type: String, default: null },
+    temp3: { type: String, default: null },
     logs: [
       {
         logMessage: String,
