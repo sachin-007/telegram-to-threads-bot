@@ -1,5 +1,6 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
+<<<<<<< HEAD
 const adminUserSchema = new mongoose.Schema(
   {
     username: String,
@@ -21,5 +22,20 @@ const adminUserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+=======
+const adminUserSchema = new mongoose.Schema({
+  username: String,
+  name: String,
+  email: String,
+  password: String,
+  access_token: String,
+  code: { type: String },
+  logs: [{
+    logMessage: String,
+    timestamp: { type: Date, default: Date.now },
+  }],
+}, { timestamps: true });
+>>>>>>> parent of 7d00c33 (authController refined)
 
-module.exports = mongoose.model("AdminUser", adminUserSchema);
+
+module.exports = mongoose.model('AdminUser', adminUserSchema);

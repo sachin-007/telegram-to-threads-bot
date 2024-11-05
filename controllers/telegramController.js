@@ -1,7 +1,7 @@
 // controllers/telegramController.js
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
-const threadController = require("./threadsController");
+const threadController = require("./threadController");
 const trackedChannels = new Set(); // Track channel IDs
 const pendingCaptions = {}; // Store pending captions by ID for manual posting
 

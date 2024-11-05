@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 const axios = require("axios");
 const AdminUser = require("../models/adminUser");
 const logActivity = require("../logActivity");
-const adminUser = require("../models/adminUser");
 require("dotenv").config();
 
 exports.register = async (req, res) => {
@@ -22,12 +21,12 @@ exports.register = async (req, res) => {
     await user.save();
 
     // Generate JWT
-    // const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-    //   expiresIn: "12h",
-    // });
-    // logActivity(`Barer token token for ${req.body.email} ` + token);
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "12h",
+    });
+    logActivity(`Barer token token for ${req.body.email} ` + token);
 
-    res.status(201).json({ message: "Registration successful" });
+    res.status(201).json({ token, message: "Registration successful" });
   } catch (error) {
     await logActivity("Error registering user", { error: error.message });
     res
@@ -53,12 +52,11 @@ exports.login = async (req, res) => {
     }
 
     // Generate JWT
-    // const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-    //   expiresIn: "12h",
-    // });
-    req.session.email = email;
-    logActivity("Login successful");
-    res.status(200).json({ message: "Login successful" });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "12h",
+    });
+    logActivity(`login access token token for ${req.body.email} ` + token);
+    res.status(200).json({ token, message: "Login successful" });
   } catch (error) {
     await logActivity("Error logging in", { error: error.message });
     res.status(500).json({ message: "Error logging in", error: error.message });
@@ -67,10 +65,10 @@ exports.login = async (req, res) => {
 
 const scope =
   "threads_basic,threads_content_publish,threads_manage_insights,threads_manage_replies,threads_read_replies";
+const THREAD_APP_ID = process.env.THREAD_APP_ID;
 const REDIRECT_URI = process.env.REDIRECT_URI;
-// const THREAD_APP_ID = process.env.THREAD_APP_ID;
-// const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
-// const forceReauth = true;
+const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
+const forceReauth = true;
 
 // // Step 1: Redirect to Authorization URL
 // exports.getAuthorizationUrl = (req, res) => {
@@ -80,25 +78,13 @@ const REDIRECT_URI = process.env.REDIRECT_URI;
 // };
 
 // Start the OAuth authorization process
-exports.startOAuth = async (req, res) => {
-  const email = req.session.email;
-  const { THREAD_APP_ID, THREADS_APP_SECRET } = req.body;
-
-  if (!THREAD_APP_ID || !THREADS_APP_SECRET) {
-    return res.status(400).json({ error: "Required parameters are missing" });
-  }
-
-  const updatedUser = await AdminUser.findOneAndUpdate(
-    { email },
-    { THREAD_APP_ID, THREADS_APP_SECRET }
-  );
-
+exports.startOAuth = (req, res) => {
   const authUrl = `https://www.threads.net/oauth/authorize/?redirect_uri=${encodeURIComponent(
     REDIRECT_URI
   )}&client_id=${THREAD_APP_ID}&response_type=code&scope=${encodeURIComponent(
     scope
   )}`;
-  logActivity(`authUrl of ${email}= ` + authUrl);
+  logActivity("authUrl is = " + authUrl);
   res.redirect(authUrl);
 };
 
@@ -157,11 +143,6 @@ exports.handleCallback = async (req, res) => {
     logActivity(
       `Successfully exchanged code for token. User ID: ${user_id}, Access Token: ${access_token}`
     ); // Log success
-
-    const updatedUser = await AdminUser.findOneAndUpdate(
-      { email },
-      { access_token, user_id }
-    );
 
     // Respond with the access token and user ID
     res.json({ access_token, user_id });
