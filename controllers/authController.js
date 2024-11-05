@@ -106,6 +106,17 @@ exports.startOAuth = async (req, res) => {
 exports.handleCallback = async (req, res) => {
   const email = req.session.email;
   const { code, error, error_description } = req.query;
+  if (!email) {
+    return res.status(401).json({ error: "User not authenticated" });
+  }
+
+  const user = await AdminUser.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const { THREAD_APP_ID, THREADS_APP_SECRET } = user;
 
   // Check if an error was provided in the query parameters
   if (error) {
