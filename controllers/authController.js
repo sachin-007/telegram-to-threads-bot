@@ -64,8 +64,8 @@ exports.login = async (req, res) => {
 const scope =
   "threads_basic,threads_content_publish,threads_manage_insights,threads_manage_replies,threads_read_replies";
 const REDIRECT_URI = process.env.REDIRECT_URI;
-// const THREAD_APP_ID = process.env.THREAD_APP_ID;
-// const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
+const THREAD_APP_ID = process.env.THREAD_APP_ID;
+const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
 // const forceReauth = true;
 
 // // Step 1: Redirect to Authorization URL
