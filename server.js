@@ -42,6 +42,7 @@ connectDB();
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Configure express-session
 app.use(
