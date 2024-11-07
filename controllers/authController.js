@@ -89,7 +89,7 @@ exports.startOAuth = async (req, res) => {
 
 // Step 2: Handle Redirect and Exchange Code for Token
 exports.handleCallback = async (req, res) => {
-  const { code, error, error_description } = req.query;
+  const { code, error, error_description, state } = req.query;
   const email = decodeURIComponent(state);
 
   if (error) {
