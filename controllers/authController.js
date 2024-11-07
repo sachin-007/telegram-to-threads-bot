@@ -128,6 +128,27 @@ exports.handleCallback = async (req, res) => {
   }
 
   try {
+    const email = req.session.email;
+    const user = await AdminUser.findOne(
+      { email },
+      "THREAD_APP_ID THREADS_APP_SECRET"
+    );
+
+    // Ensure that the user exists and has THREAD_APP_ID and THREADS_APP_SECRET
+    if (!user || !user.THREAD_APP_ID || !user.THREADS_APP_SECRET) {
+      return res.status(404).json({
+        error:
+          "User or required credentials (THREAD_APP_ID, THREADS_APP_SECRET) not found",
+      });
+    }
+
+    // Extract the THREAD_APP_ID and THREADS_APP_SECRET
+    const { THREAD_APP_ID, THREADS_APP_SECRET } = user;
+
+    logActivity(
+      `in exchange token email is : ${email}\nTHREAD_APP_ID is : ${THREAD_APP_ID}\nTHREADS_APP_SECRET is : ${THREADS_APP_SECRET}`
+    );
+
     // Exchange the authorization code for an access token
     const response = await axios.post(
       "https://graph.threads.net/oauth/access_token",
@@ -148,8 +169,6 @@ exports.handleCallback = async (req, res) => {
     logActivity(
       `Successfully exchanged code for token. User ID: ${user_id}, Access Token: ${access_token}`
     ); // Log success
-
-    const email = req.session.email;
 
     const updatedUser = await AdminUser.findOneAndUpdate(
       { email },
