@@ -46,7 +46,7 @@ app.use(express.json());
 // Configure express-session
 app.use(
   session({
-    secret: "your_secret_key", // Replace with a strong secret key
+    secret: process.env.APP_SECRET, // Replace with a strong secret key
     resave: false, // Prevents saving session if unmodified
     saveUninitialized: true, // Creates a session even if no data is stored
     cookie: { secure: false }, // Set to true if using HTTPS in production

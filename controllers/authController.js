@@ -109,11 +109,10 @@ exports.startOAuth = async (req, res) => {
 exports.handleCallback = async (req, res) => {
   const { code, error, error_description } = req.query;
 
-  // Check if an error was provided in the query parameters
   if (error) {
     logActivity(
       `OAuth error: ${error_description || "No description available."}`
-    ); // Log the OAuth error details
+    );
     return res.status(400).json({
       message: `OAuth error: ${
         error_description || "No description available."
@@ -121,9 +120,8 @@ exports.handleCallback = async (req, res) => {
     });
   }
 
-  // Check if the authorization code is provided
   if (!code) {
-    logActivity("Authorization code not provided."); // Log the missing code error
+    logActivity("Authorization code not provided.");
     return res.status(400).json({ message: "No authorization code provided." });
   }
 
@@ -134,7 +132,6 @@ exports.handleCallback = async (req, res) => {
       "THREAD_APP_ID THREADS_APP_SECRET"
     );
 
-    // Ensure that the user exists and has THREAD_APP_ID and THREADS_APP_SECRET
     if (!user || !user.THREAD_APP_ID || !user.THREADS_APP_SECRET) {
       return res.status(404).json({
         error:
@@ -142,14 +139,8 @@ exports.handleCallback = async (req, res) => {
       });
     }
 
-    // Extract the THREAD_APP_ID and THREADS_APP_SECRET
     const { THREAD_APP_ID, THREADS_APP_SECRET } = user;
 
-    logActivity(
-      `in exchange token email is : ${email}\nTHREAD_APP_ID is : ${THREAD_APP_ID}\nTHREADS_APP_SECRET is : ${THREADS_APP_SECRET}`
-    );
-
-    // Exchange the authorization code for an access token
     const response = await axios.post(
       "https://graph.threads.net/oauth/access_token",
       null,
@@ -164,40 +155,32 @@ exports.handleCallback = async (req, res) => {
       }
     );
 
-    // Extract the access token and user ID
     const { access_token, user_id } = response.data;
     logActivity(
       `Successfully exchanged code for token. User ID: ${user_id}, Access Token: ${access_token}`
-    ); // Log success
-
-    const updatedUser = await AdminUser.findOneAndUpdate(
-      { email },
-      { access_token, user_id }
     );
 
-    // Respond with the access token and user ID
+    await AdminUser.findOneAndUpdate({ email }, { access_token, user_id });
+
     res.json({ access_token, user_id });
   } catch (error) {
     if (error.response) {
-      // If the error response comes from the API
       const { status, data } = error.response;
       logActivity(
         `API error: Status ${status}, Response: ${JSON.stringify(data)}`
-      ); // Log API response error details
+      );
       res
         .status(status)
         .json({ message: "Error exchanging code for token.", details: data });
     } else if (error.request) {
-      // If the request was made but no response was received
       logActivity(
         "No response received from Threads API. Possible network error."
-      ); // Log network error
+      );
       res
         .status(500)
         .json({ message: "No response received from Threads API." });
     } else {
-      // If another error occurred
-      logActivity(`Unknown error: ${error.message}`); // Log unexpected error
+      logActivity(`Unknown error: ${error.message}`);
       res.status(500).json({
         message: "An unknown error occurred.",
         details: error.message,
