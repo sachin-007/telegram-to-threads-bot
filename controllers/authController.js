@@ -21,12 +21,6 @@ exports.register = async (req, res) => {
     user = new AdminUser({ username, name, email, password: hashedPassword });
     await user.save();
 
-    // Generate JWT
-    // const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-    //   expiresIn: "12h",
-    // });
-    // logActivity(`Barer token token for ${req.body.email} ` + token);
-
     res.status(201).json({ message: "Registration successful" });
   } catch (error) {
     await logActivity("Error registering user", { error: error.message });
@@ -65,18 +59,6 @@ const scope =
   "threads_basic,threads_content_publish,threads_manage_insights,threads_manage_replies,threads_read_replies";
 const REDIRECT_URI = process.env.REDIRECT_URI;
 
-// const THREAD_APP_ID = process.env.THREAD_APP_ID;
-// const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
-
-// const forceReauth = true;
-
-// // Step 1: Redirect to Authorization URL
-// exports.getAuthorizationUrl = (req, res) => {
-//   const authUrl = `https://threads.net/oauth/authorize?client_id=${THREAD_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-//   logActivity(`Generated Authorization URL: ${authUrl}`); // Log the authorization URL
-//   res.redirect(authUrl);
-// };
-
 // Start the OAuth authorization process
 exports.startOAuth = async (req, res) => {
   const email = req.session.email;
@@ -100,7 +82,7 @@ exports.startOAuth = async (req, res) => {
     REDIRECT_URI
   )}&client_id=${THREAD_APP_ID}&response_type=code&scope=${encodeURIComponent(
     scope
-  )}`;
+  )}&state=${encodeURIComponent(email)}`;
   logActivity(`authUrl of ${email}= ` + authUrl);
   res.redirect(authUrl);
 };
@@ -108,6 +90,7 @@ exports.startOAuth = async (req, res) => {
 // Step 2: Handle Redirect and Exchange Code for Token
 exports.handleCallback = async (req, res) => {
   const { code, error, error_description } = req.query;
+  const email = decodeURIComponent(state);
 
   if (error) {
     logActivity(
@@ -126,7 +109,6 @@ exports.handleCallback = async (req, res) => {
   }
 
   try {
-    const email = req.session.email;
     const user = await AdminUser.findOne(
       { email },
       "THREAD_APP_ID THREADS_APP_SECRET"
