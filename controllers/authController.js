@@ -61,7 +61,10 @@ const REDIRECT_URI = process.env.REDIRECT_URI;
 
 // Start the OAuth authorization process
 exports.startOAuth = async (req, res) => {
-  const email = req.session.email;
+  const email = req.body.email;
+  if (!email) {
+    const email = req.session.email;
+  }
   var { THREAD_APP_ID, THREADS_APP_SECRET } = req.body;
 
   if (!THREAD_APP_ID || !THREADS_APP_SECRET) {
