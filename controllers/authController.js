@@ -87,7 +87,9 @@ exports.startOAuth = async (req, res) => {
     scope
   )}&state=${encodeURIComponent(email)}`;
   logActivity(`authUrl of ${email}= ` + authUrl);
-  res.redirect(authUrl);
+  // Return the authUrl in the response instead of redirecting
+  res.json({ authUrl });
+
 };
 
 // Step 2: Handle Redirect and Exchange Code for Token
