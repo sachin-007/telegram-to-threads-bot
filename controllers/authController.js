@@ -152,12 +152,12 @@ exports.handleCallback = async (req, res) => {
     // Now call getThreadUserId with the access token to fetch the THREADS_USER_ID
     const threadsUserId = await getThreadUserId(access_token);
 
-    logActivity(`Successfully fetched THREADS_USER_ID: ${threadsUserId}`);
-
     await AdminUser.findOneAndUpdate(
       { email },
       { access_token, user_id, threadsUserId }
     );
+
+    logActivity(`Successfully fetched THREADS_USER_ID: ${threadsUserId}`);
 
     // commented for bot offline
     // Send the access token to the user via Telegram
@@ -206,7 +206,31 @@ exports.saveChatId = async (req, res) => {
     res.status(500).json({ message: "Error saving chatId." });
   }
 };
-exports.getThreadUserId = async (accessToken) => {
+
+// exports.getThreadUserId = async (accessToken) => {
+//   try {
+//     // Make an API call to the Threads API endpoint that returns user info
+//     const response = await axios.get("https://graph.threads.net/v1.0/me", {
+//       params: {
+//         access_token: accessToken,
+//       },
+//     });
+
+//     // Extract the user ID from the response
+//     const userId = response.data.id;
+
+//     if (!userId) {
+//       throw new Error("User ID not found in the response");
+//     }
+
+//     return userId;
+//   } catch (error) {
+//     console.error("Error fetching user ID from Threads API:", error.message);
+//     throw new Error("Failed to retrieve THREADS_USER_ID");
+//   }
+// };
+
+const getThreadUserId = async (accessToken) => {
   try {
     // Make an API call to the Threads API endpoint that returns user info
     const response = await axios.get("https://graph.threads.net/v1.0/me", {
