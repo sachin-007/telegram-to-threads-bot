@@ -212,4 +212,184 @@ bot.onText(/\/status/, (msg) => {
   }
 });
 
+
+
+
+// Register Channel Command
+bot.onText(/\/register_channel (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const channelUsername = match[1];
+
+  try {
+    // Send a message to the channel to get its ID (the bot must be an admin)
+    const sentMessage = await bot.sendMessage(channelUsername, "Registering channel with bot");
+
+    // Channel ID is available from the sent message object
+    const channelId = sentMessage.chat.id;
+
+    // Find the admin user (this should be the user who triggered the command)
+    const adminUser = await AdminUser.findOne({ chatId: msg.chat.id });
+
+    if (!adminUser) {
+      return bot.sendMessage(chatId, "Admin user not found. Please log in first.");
+    }
+
+    // Create and save a new channel
+    const newChannel = new Channel({
+      name: channelUsername,
+      username: channelUsername,
+      channelId: channelId,
+      adminUser: adminUser._id // Link the channel to the admin user
+    });
+
+    await newChannel.save();
+
+    // Add the channel to the AdminUser's list of channels
+    adminUser.channels.push(newChannel._id);
+    await adminUser.save();
+
+    // Send a success message to the user
+    bot.sendMessage(chatId, `Channel ${channelUsername} registered successfully.`);
+  } catch (error) {
+    console.error('Error registering channel:', error);
+    bot.sendMessage(chatId, `Failed to register channel ${channelUsername}. Make sure the bot is an admin in the channel.`);
+  }
+});
+
+
+
+
+// // Command to subscribe a user to a channel
+// bot.onText(/\/subscribe (.+)/, (msg, match) => {
+//   const chatId = msg.chat.id;
+//   const channelName = match[1].trim();
+
+//   if (!userChannels[chatId]) {
+//     userChannels[chatId] = [];
+//   }
+
+//   if (!userChannels[chatId].includes(channelName)) {
+//     userChannels[chatId].push(channelName);
+//     bot.sendMessage(chatId, `Subscribed to ${channelName}.`);
+//   } else {
+//     bot.sendMessage(chatId, `Already subscribed to ${channelName}.`);
+//   }
+// });
+
+// // Command to list subscribed channels and prompt the user to select multiple channels
+// bot.onText(/\/listenon/, (msg) => {
+//   const chatId = msg.chat.id;
+
+//   if (!userChannels[chatId] || userChannels[chatId].length === 0) {
+//     bot.sendMessage(chatId, "You have no subscribed channels. Use /subscribe @channel_name to add one.");
+//     return;
+//   }
+
+//   // Initialize selected channels for this user
+//   selectedChannels[chatId] = [];
+
+//   const channelOptions = userChannels[chatId].map((channel) => [
+//     {
+//       text: selectedChannels[chatId].includes(channel) ? `✅ ${channel}` : channel,
+//       callback_data: `toggle_${channel}`,
+//     },
+//   ]);
+
+//   // Add a "Done" button to confirm selection
+//   channelOptions.push([
+//     {
+//       text: "Done",
+//       callback_data: `confirm_selection`,
+//     },
+//   ]);
+
+//   bot.sendMessage(chatId, "Select channels to listen to (click again to deselect):", {
+//     reply_markup: {
+//       inline_keyboard: channelOptions,
+//     },
+//   });
+// });
+
+// // Handle callback queries for channel selection
+// bot.on("callback_query", (query) => {
+//   const chatId = query.message.chat.id;
+//   const data = query.data;
+
+//   if (data === "confirm_selection") {
+//     if (selectedChannels[chatId].length > 0) {
+//       bot.sendMessage(chatId, `Now listening to messages from: ${selectedChannels[chatId].join(", ")}`);
+//     } else {
+//       bot.sendMessage(chatId, "No channels selected. Use /listenon to select channels.");
+//     }
+//     return;
+//   }
+
+//   const channel = data.replace("toggle_", "");
+
+//   if (userChannels[chatId].includes(channel)) {
+//     if (selectedChannels[chatId].includes(channel)) {
+//       // Deselect channel
+//       selectedChannels[chatId] = selectedChannels[chatId].filter((ch) => ch !== channel);
+//     } else {
+//       // Select channel
+//       selectedChannels[chatId].push(channel);
+//     }
+
+//     // Update the inline keyboard with new selection state
+//     const channelOptions = userChannels[chatId].map((ch) => [
+//       {
+//         text: selectedChannels[chatId].includes(ch) ? `✅ ${ch}` : ch,
+//         callback_data: `toggle_${ch}`,
+//       },
+//     ]);
+//     channelOptions.push([
+//       {
+//         text: "Done",
+//         callback_data: `confirm_selection`,
+//       },
+//     ]);
+
+//     bot.editMessageReplyMarkup(
+//       {
+//         inline_keyboard: channelOptions,
+//       },
+//       {
+//         chat_id: chatId,
+//         message_id: query.message.message_id,
+//       }
+//     );
+//   }
+// });
+
+// // Listener for image messages and captions from the selected channels
+// bot.on("message", async (msg) => {
+//   const chatId = msg.chat.id;
+
+//   // Check if the message is an image and the user has selected channels
+//   if (msg.photo && selectedChannels[chatId] && selectedChannels[chatId].length > 0) {
+//     const photoId = msg.photo[msg.photo.length - 1].file_id;
+
+//     try {
+//       // Get the file URL from Telegram
+//       const fileUrl = await bot.getFileLink(photoId);
+//       const caption = msg.caption || "";
+
+//       // Send the image URL and caption to the external endpoint for each selected channel
+//       for (const channel of selectedChannels[chatId]) {
+//         await axios.post(THREAD_POST_URL, {
+//           channel,
+//           image_url: fileUrl,
+//           caption,
+//         });
+//       }
+
+//       bot.sendMessage(chatId, "Image and caption forwarded successfully to selected channels.");
+//     } catch (error) {
+//       console.error("Failed to forward the message:", error);
+//       bot.sendMessage(chatId, "Failed to forward the image and caption.");
+//     }
+//   }
+// });
+
+
 module.exports = bot;
