@@ -314,17 +314,18 @@ bot.on("message", async (msg) => {
 
     try {
       // Send GET request to your server with THREAD_APP_ID, THREADS_APP_SECRET, and email
-      const response = await axios.get(
-        "https://tmethreadbot.onrender.com/api/auth/auth",
-        {
-          params: {
-            email,
-            THREAD_APP_ID,
-            THREADS_APP_SECRET,
-          },
+      const response = await axios({
+        method: 'get',
+        url: 'https://tmethreadbot.onrender.com/api/auth/auth',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
+          email,
+          THREAD_APP_ID,
+          THREADS_APP_SECRET,
         }
-      );
-
+      });
       // If the server provides an authorization URL, send it to the user
       if (response.status === 200 && response.data.authUrl) {
         bot.sendMessage(
@@ -349,6 +350,21 @@ bot.on("message", async (msg) => {
     delete authSteps[chatId];
   }
 });
+
+
+// Endpoint to receive notification from the server with access token and send to Telegram user
+app.post("/api/auth/notify-token", async (req, res) => {
+  const { email, access_token } = req.body;
+  const chatId = getChatIdForEmail(email);
+
+  if (chatId) {
+    await bot.sendMessage(chatId, `Authorization successful! Your access token is: ${access_token}`);
+    res.sendStatus(200);
+  } else {
+    res.status(404).send("Chat ID not found.");
+  }
+});
+
 
 // Command to authorize with Threads
 // bot.onText(/\/auth/, async (msg) => {

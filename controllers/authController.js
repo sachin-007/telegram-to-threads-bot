@@ -149,6 +149,10 @@ exports.handleCallback = async (req, res) => {
 
     await AdminUser.findOneAndUpdate({ email }, { access_token, user_id });
 
+    // Immediately notify the bot with the access token and user ID
+    await axios.post("https://tmethreadbot.onrender.com/api/auth/notify-token", { email, access_token, user_id });
+
+
     res.json({ access_token, user_id });
   } catch (error) {
     if (error.response) {
