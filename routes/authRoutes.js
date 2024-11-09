@@ -14,6 +14,7 @@ router.post("/login", authController.login);
 // router.get('/auth', authController.getAuthorizationUrl);
 router.get("/auth", authController.startOAuth);
 router.get("/auth/callback", authController.handleCallback);
+router.post("/save-chatid", authController.saveChatId);
 
 // 
 

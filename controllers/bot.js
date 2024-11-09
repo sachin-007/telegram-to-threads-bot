@@ -271,6 +271,11 @@ bot.onText(/\/login (.+)/, async (msg, match) => {
     // Send success message if login is successful
     if (response.status == 200) {
       loggedInUsers[chatId] = { email, loggedIn: true };
+            // Save chatId in the database associated with this user
+            await axios.post("https://tmethreadbot.onrender.com/api/auth/save-chatid", {
+              email,
+              chatId,
+            });      
       bot.sendMessage(chatId, "Login successful! Welcome!");
     } else {
       bot.sendMessage(chatId, "Login failed! Invalid email or password.");

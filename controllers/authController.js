@@ -5,6 +5,10 @@ const AdminUser = require("../models/adminUser");
 const logActivity = require("../logActivity");
 const adminUser = require("../models/adminUser");
 require("dotenv").config();
+const bot = require("./bot"); // Import the bot instance
+// const TelegramBot = require("node-telegram-bot-api");
+// const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+
 
 exports.register = async (req, res) => {
   const { username, name, email, password } = req.body;
@@ -150,7 +154,7 @@ exports.handleCallback = async (req, res) => {
     await AdminUser.findOneAndUpdate({ email }, { access_token, user_id });
 
     // Immediately notify the bot with the access token and user ID
-    await axios.post("https://tmethreadbot.onrender.com/api/auth/notify-token", { email, access_token, user_id });
+    // await axios.post("https://tmethreadbot.onrender.com/api/auth/notify-token", { email, access_token, user_id });
 
 
     res.json({ access_token, user_id });
@@ -177,5 +181,18 @@ exports.handleCallback = async (req, res) => {
         details: error.message,
       });
     }
+  }
+};
+
+
+exports.saveChatId = async (req, res) => {
+  const { email, chatId } = req.body;
+
+  try {
+    await AdminUser.findOneAndUpdate({ email }, { chatId });
+    res.status(200).json({ message: "Chat ID saved successfully." });
+  } catch (error) {
+    console.error("Error saving chatId:", error);
+    res.status(500).json({ message: "Error saving chatId." });
   }
 };
