@@ -5,10 +5,9 @@ const AdminUser = require("../models/adminUser");
 const logActivity = require("../logActivity");
 const adminUser = require("../models/adminUser");
 require("dotenv").config();
-const bot = require("./bot"); // Import the bot instance
-// const TelegramBot = require("node-telegram-bot-api");
-// const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
+// commented cause now i don't want to start bot on server
+// const bot = require("./bot"); // Import the bot instance
 
 exports.register = async (req, res) => {
   const { username, name, email, password } = req.body;
@@ -153,15 +152,14 @@ exports.handleCallback = async (req, res) => {
 
     await AdminUser.findOneAndUpdate({ email }, { access_token, user_id });
 
-    // Immediately notify the bot with the access token and user ID
-    // await axios.post("https://tmethreadbot.onrender.com/api/auth/notify-token", { email, access_token, user_id });
 
+    // commented for bot offline 
     // Send the access token to the user via Telegram
-    if (chatId) {
-      await bot.sendMessage(chatId, `Authorization successful! Your access token is: ${access_token}`);
-    } else {
-      console.log(`Chat ID not found for user with email: ${email}`);
-    }
+    // if (chatId) {
+    //   await bot.sendMessage(chatId, `Authorization successful!`);
+    // } else {
+    //   console.log(`Chat ID not found for user with email: ${email}`);
+    // }
     res.json({ access_token, user_id });
   } catch (error) {
     if (error.response) {
