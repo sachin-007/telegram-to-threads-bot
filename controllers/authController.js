@@ -7,7 +7,7 @@ const adminUser = require("../models/adminUser");
 require("dotenv").config();
 
 // commented cause now i don't want to start bot on server
-// const bot = require("./bot"); // Import the bot instance
+const bot = require("./bot"); // Import the bot instance
 
 exports.register = async (req, res) => {
   const { username, name, email, password } = req.body;
@@ -67,7 +67,7 @@ exports.startOAuth = async (req, res) => {
   let email = req.body.email;
   if (!email) {
     email = req.session.email;
-  }  
+  }
   var { THREAD_APP_ID, THREADS_APP_SECRET } = req.body;
 
   if (!THREAD_APP_ID || !THREADS_APP_SECRET) {
@@ -92,7 +92,6 @@ exports.startOAuth = async (req, res) => {
   logActivity(`authUrl of ${email}= ` + authUrl);
   // Return the authUrl in the response instead of redirecting
   res.json({ authUrl });
-
 };
 
 // Step 2: Handle Redirect and Exchange Code for Token
@@ -129,7 +128,7 @@ exports.handleCallback = async (req, res) => {
       });
     }
 
-    const { THREAD_APP_ID, THREADS_APP_SECRET , chatId} = user;
+    const { THREAD_APP_ID, THREADS_APP_SECRET, chatId } = user;
 
     const response = await axios.post(
       "https://graph.threads.net/oauth/access_token",
@@ -150,16 +149,25 @@ exports.handleCallback = async (req, res) => {
       `Successfully exchanged code for token. User ID: ${user_id}, Access Token: ${access_token}`
     );
 
-    await AdminUser.findOneAndUpdate({ email }, { access_token, user_id });
+    // Now call getThreadUserId with the access token to fetch the THREADS_USER_ID
+    const threadsUserId = await getThreadUserId(access_token);
 
+    logActivity(`Successfully fetched THREADS_USER_ID: ${threadsUserId}`);
 
-    // commented for bot offline 
+    await AdminUser.findOneAndUpdate(
+      { email },
+      { access_token, user_id, threadsUserId }
+    );
+
+    // commented for bot offline
     // Send the access token to the user via Telegram
-    // if (chatId) {
-    //   await bot.sendMessage(chatId, `Authorization successful!`);
-    // } else {
-    //   console.log(`Chat ID not found for user with email: ${email}`);
-    // }
+    if (chatId) {
+      loggedInUsers[chatId] = { email, accessToken: true };
+
+      await bot.sendMessage(chatId, `Authorization successful!`);
+    } else {
+      console.log(`Chat ID not found for user with email: ${email}`);
+    }
     res.json({ access_token, user_id });
   } catch (error) {
     if (error.response) {
@@ -187,7 +195,6 @@ exports.handleCallback = async (req, res) => {
   }
 };
 
-
 exports.saveChatId = async (req, res) => {
   const { email, chatId } = req.body;
 
@@ -197,5 +204,76 @@ exports.saveChatId = async (req, res) => {
   } catch (error) {
     console.error("Error saving chatId:", error);
     res.status(500).json({ message: "Error saving chatId." });
+  }
+};
+exports.getThreadUserId = async (accessToken) => {
+  try {
+    // Make an API call to the Threads API endpoint that returns user info
+    const response = await axios.get("https://graph.threads.net/v1.0/me", {
+      params: {
+        access_token: accessToken,
+      },
+    });
+
+    // Extract the user ID from the response
+    const userId = response.data.id;
+
+    if (!userId) {
+      throw new Error("User ID not found in the response");
+    }
+
+    return userId;
+  } catch (error) {
+    console.error("Error fetching user ID from Threads API:", error.message);
+    throw new Error("Failed to retrieve THREADS_USER_ID");
+  }
+};
+
+exports.createThreadPost = async (req, res) => {
+  const { image_url, caption, email } = req.body; // Assuming these are sent in the request body
+
+  const user = await AdminUser.findOne({ email }, "threadsUserId");
+  // Check if required parameters are provided
+  if (!image_url || !caption || !user.access_token) {
+    return res.status(400).json({
+      message:
+        "Missing required parameters: image_url, caption, or access_token.",
+    });
+  }
+
+  const THREADS_USER_ID = user.threadsUserId;
+
+  try {
+    // Construct the API request URL
+    const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
+
+    // Prepare the payload
+    const params = new URLSearchParams();
+    params.append("media_type", "IMAGE");
+    params.append("image_url", image_url);
+    params.append("text", caption);
+    params.append("access_token", access_token);
+
+    // Send the POST request to create the thread post
+    const response = await axios.post(url, params);
+
+    // Check for successful response
+    if (response.status === 200) {
+      return res.status(200).json({
+        message: "Post created successfully!",
+        data: response.data,
+      });
+    } else {
+      return res.status(response.status).json({
+        message: "Failed to create post",
+        error: response.data,
+      });
+    }
+  } catch (error) {
+    console.error("Error creating thread post:", error);
+    return res.status(500).json({
+      message: "An error occurred while creating the post.",
+      error: error.message,
+    });
   }
 };

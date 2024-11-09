@@ -11,6 +11,7 @@ const adminUserSchema = new mongoose.Schema(
     THREAD_APP_ID: { type: String },
     REDIRECT_URI: { type: String },
     THREADS_APP_SECRET: { type: String },
+    threadsUserId: { type: String },
     user_id: String,
     chatId: String,
     logs: [
