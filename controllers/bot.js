@@ -174,10 +174,13 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
+const express = require("express");
 // const threadController = require("./threadsController");
 const authController = require("./authController");
 const session = require("express-session");
 const logActivity = require("../logActivity");
+const app = express();
+app.use(express.json());
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 const trackedChannels = new Set();
