@@ -156,7 +156,12 @@ exports.handleCallback = async (req, res) => {
     // Immediately notify the bot with the access token and user ID
     // await axios.post("https://tmethreadbot.onrender.com/api/auth/notify-token", { email, access_token, user_id });
 
-
+    // Send the access token to the user via Telegram
+    if (chatId) {
+      await bot.sendMessage(chatId, `Authorization successful! Your access token is: ${access_token}`);
+    } else {
+      console.log(`Chat ID not found for user with email: ${email}`);
+    }
     res.json({ access_token, user_id });
   } catch (error) {
     if (error.response) {
