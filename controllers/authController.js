@@ -120,17 +120,17 @@ exports.handleCallback = async (req, res) => {
   try {
     const user = await AdminUser.findOne(
       { email },
-      "THREAD_APP_ID THREADS_APP_SECRET"
+      "THREAD_APP_ID THREADS_APP_SECRET chatId"
     );
 
     if (!user || !user.THREAD_APP_ID || !user.THREADS_APP_SECRET) {
       return res.status(404).json({
         error:
-          "User or required credentials (THREAD_APP_ID, THREADS_APP_SECRET) not found",
+          "User or required credentials (THREAD_APP_ID, THREADS_APP_SECRET,) not found",
       });
     }
 
-    const { THREAD_APP_ID, THREADS_APP_SECRET } = user;
+    const { THREAD_APP_ID, THREADS_APP_SECRET , chatId} = user;
 
     const response = await axios.post(
       "https://graph.threads.net/oauth/access_token",
