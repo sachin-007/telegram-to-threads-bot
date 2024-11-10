@@ -345,8 +345,8 @@ bot.on("photo", async (msg) => {
   const email = user?.email;
 
   // Check if the user is logged in and authorized
+  logActivity(`User: ${JSON.stringify(user)}, Email: ${email}`);
   if (!user || !user.loggedIn || !user.accessToken) {
-    logActivity(`User: ${JSON.stringify(user)}, Email: ${email}`);
     bot.sendMessage(
       chatId,
       "You must be logged in and authorized to use this feature. Please complete the login and authorization steps."
@@ -375,7 +375,7 @@ bot.on("photo", async (msg) => {
 
       logActivity(postData);
 
-      if (postData.image_url && postData.caption && postData.email) {
+      if (postData.imageUrl && postData.caption && postData.email) {
         const backendApiUrl =
           "https://tmethreadbot.onrender.com/api/thread/post";
         // Send data to your backend

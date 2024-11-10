@@ -256,6 +256,7 @@ const getThreadUserId = async (accessToken) => {
 
 exports.createThreadPost = async (req, res) => {
   const { image_url, caption, email } = req.body; // Assuming these are sent in the request body
+  logActivity("Received request body:", req.body); // Add this line
 
   // Log received parameters
   logActivity("Received parameters:", { image_url, caption, email });
