@@ -255,17 +255,17 @@ const getThreadUserId = async (accessToken) => {
 };
 
 exports.createThreadPost = async (req, res) => {
-  const { image_url, caption, email } = req.body; // Assuming these are sent in the request body
+  const { imageUrl, caption, email } = req.body; // Assuming these are sent in the request body
   logActivity("Received request body:", req.body); // Add this line
 
   // Log received parameters
-  logActivity("Received parameters:", { image_url, caption, email });
+  logActivity("Received parameters:", { imageUrl, caption, email });
 
   // Check if required parameters are provided
-  if (!image_url || !caption || !email) {
+  if (!imageUrl || !caption || !email) {
     return res.status(400).json({
       message:
-        "Missing required parameters: image_url, caption, or access_token.",
+        "Missing required parameters: imageUrl, caption, or access_token.",
     });
   } else {
     const user = await AdminUser.findOne(
@@ -292,7 +292,7 @@ exports.createThreadPost = async (req, res) => {
       // Prepare the payload
       const params = new URLSearchParams();
       params.append("media_type", "IMAGE");
-      params.append("image_url", image_url);
+      params.append("imageUrl", imageUrl);
       params.append("text", caption);
       params.append("access_token", access_token);
 
