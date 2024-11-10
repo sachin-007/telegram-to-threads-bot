@@ -373,22 +373,22 @@ bot.on("photo", async (msg) => {
         email: email,
       };
 
-      // console.log(postData);
+      logActivity(postData);
 
       if (postData.image_url && postData.caption && postData.email) {
         const backendApiUrl =
           "https://tmethreadbot.onrender.com/api/thread/post";
         // Send data to your backend
         const response = await axios.post(backendApiUrl, postData);
+
+        // Respond to Telegram chat
+        bot.sendMessage(
+          chatId,
+          "Image and caption forwarded successfully to Thread!"
+        );
       } else {
         bot.sendMessage(chatId, "Only caption or text received, but no image.");
       }
-
-      // Respond to Telegram chat
-      bot.sendMessage(
-        chatId,
-        "Image and caption forwarded successfully to Thread!"
-      );
     } catch (error) {
       logActivity("Error forwarding content to backend:", error);
       bot.sendMessage(

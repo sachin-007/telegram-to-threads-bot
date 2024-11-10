@@ -305,13 +305,14 @@ exports.createThreadPost = async (req, res) => {
           data: response.data,
         });
       } else {
+        logActivity("error here respdata", response.data);
         return res.status(response.status).json({
           message: "Failed to create post",
           error: response.data,
         });
       }
     } catch (error) {
-      console.error("Error creating thread post:", error);
+      logActivity("Error creating thread post:", error);
       return res.status(500).json({
         message: "An error occurred while creating the post.",
         error: error.message,
