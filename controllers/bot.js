@@ -172,7 +172,7 @@ bot.onText(/\/login (.+)/, async (msg, match) => {
       bot.sendMessage(chatId, "Login failed! Invalid email or password.");
     }
   } catch (error) {
-    logActivity(error);
+    // logActivity(error);
     bot.sendMessage(chatId, `Error logging in: ${error.message}`);
   }
 });
@@ -238,7 +238,7 @@ bot.on("message", async (msg) => {
         );
       }
     } catch (error) {
-      logActivity("Error initiating OAuth:", error);
+      // logActivity("Error initiating OAuth:", error);
       bot.sendMessage(
         chatId,
         "An error occurred while initiating OAuth. Please try again."
@@ -323,7 +323,7 @@ bot.onText(/\/register_channel (.+)/, async (msg, match) => {
       `Channel ${channelUsername} registered successfully.`
     );
   } catch (error) {
-    logActivity("Error registering channel:", error);
+    // logActivity("Error registering channel:", error);
     bot.sendMessage(
       chatId,
       `Failed to register channel ${channelUsername}. Make sure the bot is an admin in the channel.`
@@ -345,7 +345,7 @@ bot.on("photo", async (msg) => {
   const email = user?.email;
 
   // Check if the user is logged in and authorized
-  logActivity(`User: ${JSON.stringify(user)}, Email: ${email}`);
+  // logActivity(`User: ${JSON.stringify(user)}, Email: ${email}`);
   if (!user || !user.loggedIn || !user.accessToken) {
     bot.sendMessage(
       chatId,
@@ -373,7 +373,7 @@ bot.on("photo", async (msg) => {
         email: email,
       };
 
-      logActivity(postData);
+      // logActivity(postData);
 
       if (postData.imageUrl && postData.caption && postData.email) {
         const backendApiUrl =
@@ -390,7 +390,7 @@ bot.on("photo", async (msg) => {
         bot.sendMessage(chatId, "Only caption or text received, but no image.");
       }
     } catch (error) {
-      logActivity("Error forwarding content to backend:", error);
+      // logActivity("Error forwarding content to backend:", error);
       bot.sendMessage(
         chatId,
         `There was an error forwarding the content.${error}`
@@ -401,224 +401,5 @@ bot.on("photo", async (msg) => {
     bot.sendMessage(chatId, "Please send an image with a caption!");
   }
 });
-
-// // Handle incoming messages (including forwarded media)
-// bot.on("message", async (msg) => {
-//   // Check if the message contains an image
-//   if (msg.photo) {
-//     const chatId = msg.chat.id;
-//     const caption = msg.caption || ""; // Get caption if exists
-
-//     // Get the file_id of the largest image
-//     const photo = msg.photo[msg.photo.length - 1];
-//     const fileId = photo.file_id;
-
-//     // Get the file URL using Telegram API
-//     try {
-//       const fileUrl = await bot.getFileLink(fileId);
-
-//       // Prepare data to send to your backend
-//       const postData = {
-//         imageUrl: fileUrl, // Send image URL
-//         caption: caption, // Send caption
-//       };
-
-//       console.log(postData);
-
-//       if (postData.imageUrl) {
-//         const backendApiUrl =
-//           "https://tmethreadbot.onrender.com/api/thread/post";
-//         // Send data to your backend
-//         const response = await axios.post(backendApiUrl, postData);
-//       } else {
-//         bot.sendMessage(chatId, "only caption it got or text got.");
-//       }
-
-//       // Respond to Telegram chat
-//       bot.sendMessage(
-//         chatId,
-//         "Image and caption forwarded successfully to Threads!"
-//       );
-//     } catch (error) {
-//       console.error("Error forwarding content to backend:", error);
-//       bot.sendMessage(chatId, "There was an error forwarding the content.");
-//     }
-//   } else {
-//     // If no image is found, send a message to inform the user
-//     bot.sendMessage(msg.chat.id, "Please send an image with a caption!");
-//   }
-// });
-
-// The bot listens for photos
-// bot.on("photo", async (ctx) => {
-//   const { caption, photo } = ctx.message;
-//   const fileId = photo[photo.length - 1].file_id;
-
-//   try {
-//     // Fetch the image from Telegram servers
-//     const fileUrl = await ctx.telegram.getFileLink(fileId);
-//     const imageUrl = fileUrl.href; // Image URL
-
-//     const chatId = msg.chat.id;
-//     const user = loggedInUsers[chatId];
-//     const email = user.email;
-
-//     // Post the image with caption to the backend API
-//     const response = await fetch(
-//       "https://tmethreadbot.onrender.com/api/thread/post",
-//       {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify({
-//           email,
-//           caption, // Caption of the image
-//           image: imageUrl, // Image URL
-//         }),
-//       }
-//     );
-
-//     const result = await response.json();
-//     console.log(result); // Handle response from backend
-
-//     ctx.reply(`Your post has been successfully posted to the thread.`);
-//   } catch (error) {
-//     console.error("Error posting to thread:", error);
-//     ctx.reply("Sorry, there was an error posting to the thread.");
-//   }
-// });
-
-// // Command to subscribe a user to a channel
-// bot.onText(/\/subscribe (.+)/, (msg, match) => {
-//   const chatId = msg.chat.id;
-//   const channelName = match[1].trim();
-
-//   if (!userChannels[chatId]) {
-//     userChannels[chatId] = [];
-//   }
-
-//   if (!userChannels[chatId].includes(channelName)) {
-//     userChannels[chatId].push(channelName);
-//     bot.sendMessage(chatId, `Subscribed to ${channelName}.`);
-//   } else {
-//     bot.sendMessage(chatId, `Already subscribed to ${channelName}.`);
-//   }
-// });
-
-// // Command to list subscribed channels and prompt the user to select multiple channels
-// bot.onText(/\/listenon/, (msg) => {
-//   const chatId = msg.chat.id;
-
-//   if (!userChannels[chatId] || userChannels[chatId].length === 0) {
-//     bot.sendMessage(chatId, "You have no subscribed channels. Use /subscribe @channel_name to add one.");
-//     return;
-//   }
-
-//   // Initialize selected channels for this user
-//   selectedChannels[chatId] = [];
-
-//   const channelOptions = userChannels[chatId].map((channel) => [
-//     {
-//       text: selectedChannels[chatId].includes(channel) ? `✅ ${channel}` : channel,
-//       callback_data: `toggle_${channel}`,
-//     },
-//   ]);
-
-//   // Add a "Done" button to confirm selection
-//   channelOptions.push([
-//     {
-//       text: "Done",
-//       callback_data: `confirm_selection`,
-//     },
-//   ]);
-
-//   bot.sendMessage(chatId, "Select channels to listen to (click again to deselect):", {
-//     reply_markup: {
-//       inline_keyboard: channelOptions,
-//     },
-//   });
-// });
-
-// // Handle callback queries for channel selection
-// bot.on("callback_query", (query) => {
-//   const chatId = query.message.chat.id;
-//   const data = query.data;
-
-//   if (data === "confirm_selection") {
-//     if (selectedChannels[chatId].length > 0) {
-//       bot.sendMessage(chatId, `Now listening to messages from: ${selectedChannels[chatId].join(", ")}`);
-//     } else {
-//       bot.sendMessage(chatId, "No channels selected. Use /listenon to select channels.");
-//     }
-//     return;
-//   }
-
-//   const channel = data.replace("toggle_", "");
-
-//   if (userChannels[chatId].includes(channel)) {
-//     if (selectedChannels[chatId].includes(channel)) {
-//       // Deselect channel
-//       selectedChannels[chatId] = selectedChannels[chatId].filter((ch) => ch !== channel);
-//     } else {
-//       // Select channel
-//       selectedChannels[chatId].push(channel);
-//     }
-
-//     // Update the inline keyboard with new selection state
-//     const channelOptions = userChannels[chatId].map((ch) => [
-//       {
-//         text: selectedChannels[chatId].includes(ch) ? `✅ ${ch}` : ch,
-//         callback_data: `toggle_${ch}`,
-//       },
-//     ]);
-//     channelOptions.push([
-//       {
-//         text: "Done",
-//         callback_data: `confirm_selection`,
-//       },
-//     ]);
-
-//     bot.editMessageReplyMarkup(
-//       {
-//         inline_keyboard: channelOptions,
-//       },
-//       {
-//         chat_id: chatId,
-//         message_id: query.message.message_id,
-//       }
-//     );
-//   }
-// });
-
-// // Listener for image messages and captions from the selected channels
-// bot.on("message", async (msg) => {
-//   const chatId = msg.chat.id;
-
-//   // Check if the message is an image and the user has selected channels
-//   if (msg.photo && selectedChannels[chatId] && selectedChannels[chatId].length > 0) {
-//     const photoId = msg.photo[msg.photo.length - 1].file_id;
-
-//     try {
-//       // Get the file URL from Telegram
-//       const fileUrl = await bot.getFileLink(photoId);
-//       const caption = msg.caption || "";
-
-//       // Send the image URL and caption to the external endpoint for each selected channel
-//       for (const channel of selectedChannels[chatId]) {
-//         await axios.post(THREAD_POST_URL, {
-//           channel,
-//           image_url: fileUrl,
-//           caption,
-//         });
-//       }
-
-//       bot.sendMessage(chatId, "Image and caption forwarded successfully to selected channels.");
-//     } catch (error) {
-//       console.error("Failed to forward the message:", error);
-//       bot.sendMessage(chatId, "Failed to forward the image and caption.");
-//     }
-//   }
-// });
 
 module.exports = bot;
