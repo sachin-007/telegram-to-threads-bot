@@ -8,7 +8,7 @@ require("dotenv").config();
 
 // commented cause now i don't want to start bot on server
 const bot = require("./bot"); // Import the bot instance
-let loggedInUsers = {};
+const loggedInUsers = require("./loggedInUsers"); // Import shared loggedInUsers
 
 exports.register = async (req, res) => {
   const { username, name, email, password } = req.body;

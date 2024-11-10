@@ -14,7 +14,7 @@ app.use(express.json());
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 const trackedChannels = new Set();
 const pendingCaptions = {};
-const loggedInUsers = {}; // Temporary in-memory storage, replace with a DB for production
+const loggedInUsers = require("./loggedInUsers"); // Import shared loggedInUsers
 const authSteps = {}; // Temporary storage for tracking authorization steps
 
 console.log("Telegram bot started.");
@@ -342,15 +342,11 @@ bot.onText(/\/register_channel (.+)/, async (msg, match) => {
 bot.on("photo", async (msg) => {
   const chatId = msg.chat.id;
   const user = loggedInUsers[chatId];
-  const email = loggedInUsers[chatId]?.email;
+  const email = user?.email;
 
   // Check if the user is logged in and authorized
   if (!user || !user.loggedIn || !user.accessToken) {
-    logActivity(
-      `User: ${user}, LoggedIn: ${user ? user.loggedIn : null}, AccessToken: ${
-        user ? user.accessToken : null
-      }\n and email is : ${email}`
-    );
+    logActivity(`User: ${JSON.stringify(user)}, Email: ${email}`);
     bot.sendMessage(
       chatId,
       "You must be logged in and authorized to use this feature. Please complete the login and authorization steps."
