@@ -342,9 +342,15 @@ bot.onText(/\/register_channel (.+)/, async (msg, match) => {
 bot.on("photo", async (msg) => {
   const chatId = msg.chat.id;
   const user = loggedInUsers[chatId];
+  const email = loggedInUsers[chatId]?.email;
 
   // Check if the user is logged in and authorized
   if (!user || !user.loggedIn || !user.accessToken) {
+    logActivity(
+      `User: ${user}, LoggedIn: ${user ? user.loggedIn : null}, AccessToken: ${
+        user ? user.accessToken : null
+      }\n and email is : ${email}`
+    );
     bot.sendMessage(
       chatId,
       "You must be logged in and authorized to use this feature. Please complete the login and authorization steps."
@@ -368,6 +374,7 @@ bot.on("photo", async (msg) => {
       const postData = {
         imageUrl: fileUrl, // Send image URL
         caption: caption, // Send caption
+        email: email,
       };
 
       // console.log(postData);

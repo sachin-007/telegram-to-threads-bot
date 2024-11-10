@@ -163,7 +163,7 @@ exports.handleCallback = async (req, res) => {
     // commented for bot offline
     // Send the access token to the user via Telegram
     if (chatId) {
-      loggedInUsers[chatId] = { email, accessToken: true };
+      loggedInUsers[chatId] = { email, loggedIn: true, accessToken: true };
 
       await bot.sendMessage(chatId, `Authorization successful!`);
     } else {
@@ -257,48 +257,53 @@ const getThreadUserId = async (accessToken) => {
 exports.createThreadPost = async (req, res) => {
   const { image_url, caption, email } = req.body; // Assuming these are sent in the request body
 
-  const user = await AdminUser.findOne({ email }, "threadsUserId");
   // Check if required parameters are provided
-  if (!image_url || !caption || !user.access_token) {
+  if (!image_url || !caption || !email) {
     return res.status(400).json({
       message:
         "Missing required parameters: image_url, caption, or access_token.",
     });
-  }
+  } else {
+    const user = await AdminUser.findOne(
+      { email },
+      "threadsUserId access_token"
+    );
+    const access_token = user.access_token;
 
-  const THREADS_USER_ID = user.threadsUserId;
+    const THREADS_USER_ID = user.threadsUserId;
 
-  try {
-    // Construct the API request URL
-    const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
+    try {
+      // Construct the API request URL
+      const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
 
-    // Prepare the payload
-    const params = new URLSearchParams();
-    params.append("media_type", "IMAGE");
-    params.append("image_url", image_url);
-    params.append("text", caption);
-    params.append("access_token", access_token);
+      // Prepare the payload
+      const params = new URLSearchParams();
+      params.append("media_type", "IMAGE");
+      params.append("image_url", image_url);
+      params.append("text", caption);
+      params.append("access_token", access_token);
 
-    // Send the POST request to create the thread post
-    const response = await axios.post(url, params);
+      // Send the POST request to create the thread post
+      const response = await axios.post(url, params);
 
-    // Check for successful response
-    if (response.status === 200) {
-      return res.status(200).json({
-        message: "Post created successfully!",
-        data: response.data,
-      });
-    } else {
-      return res.status(response.status).json({
-        message: "Failed to create post",
-        error: response.data,
+      // Check for successful response
+      if (response.status === 200) {
+        return res.status(200).json({
+          message: "Post created successfully!",
+          data: response.data,
+        });
+      } else {
+        return res.status(response.status).json({
+          message: "Failed to create post",
+          error: response.data,
+        });
+      }
+    } catch (error) {
+      console.error("Error creating thread post:", error);
+      return res.status(500).json({
+        message: "An error occurred while creating the post.",
+        error: error.message,
       });
     }
-  } catch (error) {
-    console.error("Error creating thread post:", error);
-    return res.status(500).json({
-      message: "An error occurred while creating the post.",
-      error: error.message,
-    });
   }
 };
