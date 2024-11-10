@@ -291,9 +291,12 @@ exports.createThreadPost = async (req, res) => {
 
       // Prepare the payload
       const params = new URLSearchParams();
+      // Decode the URL-encoded image URL and caption
+      const decodedImageUrl = decodeURIComponent(imageUrl);
+      const decodedCaption = decodeURIComponent(caption);
       params.append("media_type", "IMAGE");
-      params.append("imageUrl", imageUrl);
-      params.append("text", caption);
+      params.append("image_url", decodedImageUrl);
+      params.append("text", decodedCaption);
       params.append("access_token", access_token);
 
       // Send the POST request to create the thread post
@@ -301,10 +304,26 @@ exports.createThreadPost = async (req, res) => {
 
       // Check for successful response
       if (response.status === 200) {
-        return res.status(200).json({
-          message: "Post created successfully!",
-          data: response.data,
-        });
+        const creation_id = response.data.id; // Get the creation ID
+
+        // Now call the threads_publish endpoint with the creation_id
+        const publishUrl = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads_publish?creation_id=${creation_id}&access_token=${access_token}`;
+
+        // Send the POST request to publish the thread
+        const publishResponse = await axios.post(publishUrl);
+
+        // Check if publishing was successful
+        if (publishResponse.status === 200) {
+          return res.status(200).json({
+            message: "Post created and published successfully!",
+            data: publishResponse.data,
+          });
+        } else {
+          return res.status(publishResponse.status).json({
+            message: "Failed to publish post",
+            error: publishResponse.data,
+          });
+        }
       } else {
         logActivity("error here respdata", response.data);
         return res.status(response.status).json({
