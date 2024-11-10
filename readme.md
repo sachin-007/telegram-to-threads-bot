@@ -64,27 +64,6 @@ node bot.js
 
 The bot will now be active and listening to messages in your group.
 
-### 5. Deploying (Optional)
-
-To deploy the bot to a platform like Heroku or AWS, follow the platform-specific steps to deploy a Node.js application.
-
-For example, to deploy on Heroku:
-
-1. Create a new Heroku app:
-    ```bash
-    heroku create
-    ```
-
-2. Add your environment variables to Heroku:
-    ```bash
-    heroku config:set BOT_TOKEN=your_telegram_bot_token THREADS_API_TOKEN=your_threads_api_token
-    ```
-
-3. Deploy your app:
-    ```bash
-    git push heroku master
-    ```
-
 ## Usage
 
 - Add the bot to your desired Telegram group.
