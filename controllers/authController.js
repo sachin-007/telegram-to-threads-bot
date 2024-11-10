@@ -257,6 +257,9 @@ const getThreadUserId = async (accessToken) => {
 exports.createThreadPost = async (req, res) => {
   const { image_url, caption, email } = req.body; // Assuming these are sent in the request body
 
+  // Log received parameters
+  logActivity("Received parameters:", { image_url, caption, email });
+
   // Check if required parameters are provided
   if (!image_url || !caption || !email) {
     return res.status(400).json({
@@ -268,9 +271,18 @@ exports.createThreadPost = async (req, res) => {
       { email },
       "threadsUserId access_token"
     );
+
+    if (!user || !user.access_token) {
+      return res.status(400).json({
+        message: "User not found or access token missing.",
+      });
+    }
     const access_token = user.access_token;
 
     const THREADS_USER_ID = user.threadsUserId;
+    logActivity(
+      `User's access token: ${access_token}+"\nand thread user id :${THREADS_USER_ID}`
+    );
 
     try {
       // Construct the API request URL

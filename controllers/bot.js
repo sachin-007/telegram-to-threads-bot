@@ -375,7 +375,7 @@ bot.on("photo", async (msg) => {
 
       // console.log(postData);
 
-      if (postData.imageUrl) {
+      if (postData.image_url && postData.caption && postData.email) {
         const backendApiUrl =
           "https://tmethreadbot.onrender.com/api/thread/post";
         // Send data to your backend
@@ -391,7 +391,10 @@ bot.on("photo", async (msg) => {
       );
     } catch (error) {
       logActivity("Error forwarding content to backend:", error);
-      bot.sendMessage(chatId, "There was an error forwarding the content.");
+      bot.sendMessage(
+        chatId,
+        `There was an error forwarding the content.${error}`
+      );
     }
   } else {
     // If no image is found, send a message to inform the user
