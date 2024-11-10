@@ -17,7 +17,7 @@ const pendingCaptions = {};
 const loggedInUsers = require("./loggedInUsers"); // Import shared loggedInUsers
 const authSteps = {}; // Temporary storage for tracking authorization steps
 
-console.log("Telegram bot started.");
+logActivity("Telegram bot started.");
 
 // Starting message
 bot.onText(/\/start/, (msg) => {
@@ -118,7 +118,7 @@ bot.onText(/\/register/, async (msg) => {
 
   const [, username, name, email, password] = messageParts;
 
-  console.log(username, name, email, password);
+  logActivity(username, name, email, password);
 
   try {
     // Sending a POST request with the data
@@ -144,7 +144,7 @@ bot.onText(/\/login (.+)/, async (msg, match) => {
   const messageParts = match[1].split(" "); // Expecting the format: "email password"
   const [email, password] = messageParts;
 
-  console.log("Attempting login with:", email, password);
+  logActivity("Attempting login with:", email, password);
 
   try {
     // Replace with the actual backend URL
@@ -172,7 +172,7 @@ bot.onText(/\/login (.+)/, async (msg, match) => {
       bot.sendMessage(chatId, "Login failed! Invalid email or password.");
     }
   } catch (error) {
-    console.error(error);
+    logActivity(error);
     bot.sendMessage(chatId, `Error logging in: ${error.message}`);
   }
 });
@@ -238,7 +238,7 @@ bot.on("message", async (msg) => {
         );
       }
     } catch (error) {
-      console.error("Error initiating OAuth:", error);
+      logActivity("Error initiating OAuth:", error);
       bot.sendMessage(
         chatId,
         "An error occurred while initiating OAuth. Please try again."
@@ -323,7 +323,7 @@ bot.onText(/\/register_channel (.+)/, async (msg, match) => {
       `Channel ${channelUsername} registered successfully.`
     );
   } catch (error) {
-    console.error("Error registering channel:", error);
+    logActivity("Error registering channel:", error);
     bot.sendMessage(
       chatId,
       `Failed to register channel ${channelUsername}. Make sure the bot is an admin in the channel.`
@@ -390,7 +390,7 @@ bot.on("photo", async (msg) => {
         "Image and caption forwarded successfully to Thread!"
       );
     } catch (error) {
-      console.error("Error forwarding content to backend:", error);
+      logActivity("Error forwarding content to backend:", error);
       bot.sendMessage(chatId, "There was an error forwarding the content.");
     }
   } else {
