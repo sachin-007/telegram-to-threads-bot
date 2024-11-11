@@ -1,6 +1,6 @@
 // Import required dependencies
 const express = require('express');
-const logActivity = require('../models/logActivity');
+const logActivity = require('../logActivity');
 const router = express.Router();
 
 // Endpoint to handle notifications from Microsoft Graph API
