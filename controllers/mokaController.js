@@ -1,5 +1,6 @@
 // Import required dependencies
 const express = require('express');
+const logActivity = require('../models/logActivity');
 const router = express.Router();
 
 // Endpoint to handle notifications from Microsoft Graph API
@@ -14,7 +15,7 @@ router.all('/notification', async (req, res) => {
     if (req.body && req.body.value) {
         const notifications = req.body.value;
         notifications.forEach(notification => {
-            console.log('Received webhook notification:', notification);
+            logActivity('Received webhook notification:', notification);
             // Additional processing for each notification can be added here
         });
         return res.status(200).json({ status: 'Notification processed' });
