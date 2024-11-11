@@ -37,6 +37,7 @@ const fs = require("fs");
 const path = require("path");
 const logActivity = require("./logActivity");
 const session = require("express-session");
+const mokaController = require('./controllers/mokaController')
 
 dotenv.config();
 connectDB();
@@ -58,6 +59,7 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/telegram", telegramRoutes);
 app.use("/api/thread", threadsRoutes);
+app.use('/api', mokaController);
 app.get("/privacy", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "privacy.html"));
 });
