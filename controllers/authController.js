@@ -256,10 +256,10 @@ const getThreadUserId = async (accessToken) => {
 
 exports.createThreadPost = async (req, res) => {
   const { imageUrl, caption, email } = req.body; // Assuming these are sent in the request body
-  logActivity("Received request body:", req.body); // Add this line
+  // logActivity("Received request body:", req.body); // Add this line
 
   // Log received parameters
-  logActivity("Received parameters:", { imageUrl, caption, email });
+  // logActivity("Received parameters:", { imageUrl, caption, email });
 
   // Check if required parameters are provided
   if (!imageUrl || !caption || !email) {

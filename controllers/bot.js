@@ -19,6 +19,13 @@ const authSteps = {}; // Temporary storage for tracking authorization steps
 
 logActivity("Telegram bot started.");
 
+bot.on('polling_error', (error) => {
+  console.error('Polling error:', error); // Log the error for troubleshooting
+  bot.stopPolling(); // Stop polling
+  setTimeout(() => bot.startPolling(), 10000); // Restart polling after 10 seconds
+});
+
+
 // Starting message
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
@@ -118,7 +125,7 @@ bot.onText(/\/register/, async (msg) => {
 
   const [, username, name, email, password] = messageParts;
 
-  logActivity(username, name, email, password);
+  logActivity("Attempting register with:",username, name, email, password);
 
   try {
     // Sending a POST request with the data
@@ -387,7 +394,7 @@ bot.on("photo", async (msg) => {
           "Image and caption forwarded successfully to Thread!"
         );
       } else {
-        bot.sendMessage(chatId, "Only caption or text received, but no image.");
+        bot.sendMessage(chatId, "Only caption or text or image is received.");
       }
     } catch (error) {
       // logActivity("Error forwarding content to backend:", error);
