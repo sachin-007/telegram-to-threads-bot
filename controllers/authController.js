@@ -7,10 +7,10 @@ const adminUser = require("../models/adminUser");
 require("dotenv").config();
 
 // commented cause now i don't want to start bot on server
-const bot = require("./bot"); // Import the bot instance
+// const bot = require("./bot"); // Import the bot instance
 const loggedInUsers = require("./loggedInUsers"); // Import shared loggedInUsers
 
-exports.register = async (req, res) => {
+exports.register = async (req, res, bot) => {
   const { username, name, email, password } = req.body;
 
   try {
@@ -34,7 +34,7 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.login = async (req, res) => {
+exports.login = async (req, res, bot) => {
   const { email, password } = req.body;
 
   try {
@@ -64,7 +64,7 @@ const scope =
 const REDIRECT_URI = process.env.REDIRECT_URI;
 
 // Start the OAuth authorization process
-exports.startOAuth = async (req, res) => {
+exports.startOAuth = async (req, res, bot) => {
   let email = req.body.email;
   if (!email) {
     email = req.session.email;
@@ -96,7 +96,7 @@ exports.startOAuth = async (req, res) => {
 };
 
 // Step 2: Handle Redirect and Exchange Code for Token
-exports.handleCallback = async (req, res) => {
+exports.handleCallback = async (req, res, bot) => {
   const { code, error, error_description, state } = req.query;
   const email = decodeURIComponent(state);
 
@@ -196,7 +196,7 @@ exports.handleCallback = async (req, res) => {
   }
 };
 
-exports.saveChatId = async (req, res) => {
+exports.saveChatId = async (req, res, bot) => {
   const { email, chatId } = req.body;
 
   try {
@@ -254,7 +254,7 @@ const getThreadUserId = async (accessToken) => {
   }
 };
 
-exports.createThreadPost = async (req, res) => {
+exports.createThreadPost = async (req, res, bot) => {
   const { imageUrl, caption, email } = req.body; // Assuming these are sent in the request body
   // logActivity("Received request body:", req.body); // Add this line
 

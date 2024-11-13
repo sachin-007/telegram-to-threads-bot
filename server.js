@@ -3,13 +3,13 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const telegramRoutes = require("./routes/telegramRoutes");
+const TelegramBot = require("node-telegram-bot-api");
 const threadsRoutes = require("./routes/threadsRoutes");
 const fs = require("fs");
 const path = require("path");
 const logActivity = require("./logActivity");
 const session = require("express-session");
 const mokaController = require('./controllers/mokaController')
-const bot = require("./controllers/bot"); // Import bot.js to initialize it
 
 dotenv.config();
 connectDB();
@@ -17,6 +17,12 @@ connectDB();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Initialize the Telegram bot
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+logActivity("Telegram bot started. right with server");
+require('./controllers/bot')(bot);
+
 
 // Configure express-session
 app.use(
@@ -27,6 +33,15 @@ app.use(
     cookie: { secure: false }, // Set to true if using HTTPS in production
   })
 );
+
+
+
+// Inject the bot instance into each request (optional)
+app.use((req, res, next) => {
+  req.bot = bot;
+  next();
+});
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/telegram", telegramRoutes);

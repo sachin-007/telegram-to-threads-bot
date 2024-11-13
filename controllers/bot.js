@@ -1,23 +1,19 @@
 require("dotenv").config();
-const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 const express = require("express");
-const { Telegraf } = require("telegraf");
-// const fetch = require("node-fetch");
-// const threadController = require("./threadsController");
-const authController = require("./authController");
 const session = require("express-session");
-const logActivity = require("../logActivity");
 const app = express();
 app.use(express.json());
-
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
-const trackedChannels = new Set();
-const pendingCaptions = {};
+// const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 const loggedInUsers = require("./loggedInUsers"); // Import shared loggedInUsers
+const logActivity = require("../logActivity");
 const authSteps = {}; // Temporary storage for tracking authorization steps
 
-logActivity("Telegram bot started.");
+// logActivity('',"Telegram bot started.");
+logActivity("Telegram bot inside the bot.js.")
+
+
+module.exports = (bot) => {
 
 bot.on('polling_error', (error) => {
   console.error('Polling error:', error); // Log the error for troubleshooting
@@ -408,5 +404,5 @@ bot.on("photo", async (msg) => {
     bot.sendMessage(chatId, "Please send an image with a caption!");
   }
 });
-
-module.exports = bot;
+}
+// module.exports = bot;

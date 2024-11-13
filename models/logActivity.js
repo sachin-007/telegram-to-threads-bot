@@ -1,7 +1,6 @@
 // models/logActivity.js
 
 const mongoose = require('mongoose');
-const logActivity = require('../logActivity');
 
 const logActivitySchema = new mongoose.Schema({
   userId: {
