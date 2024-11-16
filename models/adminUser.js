@@ -20,6 +20,7 @@ const adminUserSchema = new mongoose.Schema(
         timestamp: { type: Date, default: Date.now },
       },
     ],
+    tags: [String], // Added tags field to store tags as an array
   },
   { timestamps: true }
 );

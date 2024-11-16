@@ -258,28 +258,7 @@ exports.createThreadPost = async (req, res, bot) => {
   const { imageUrl, caption, email } = req.body; // Assuming these are sent in the request body
   // logActivity("Received request body:", req.body); // Add this line
   // Define the common tags
-  const tags = [
-    "#TradingTips",
-    "#CryptoAnalysis",
-    "#StockMarket",
-    "#MarketTrends",
-    "#CryptoTrading",
-    "#StockAnalysis",
-    "#Investing",
-    "#TraderLife",
-    "#CryptoInvesting",
-    "#TechnicalAnalysis",
-    "#MarketInsights",
-    "#BreakoutStocks",
-    "#TradeSmart",
-    "#StockTips",
-    "#CryptoUpdates",
-    "#InvestWisely",
-    "#TradingCommunity",
-    "#FinancialFreedom",
-    "#MarketNews",
-    "#TradeWithConfidence",
-  ];
+
   // Log received parameters
   // logActivity("Received parameters:", { imageUrl, caption, email });
 
@@ -292,7 +271,7 @@ exports.createThreadPost = async (req, res, bot) => {
   } else {
     const user = await AdminUser.findOne(
       { email },
-      "threadsUserId access_token"
+      "threadsUserId access_token tags"
     );
 
     if (!user || !user.access_token) {
@@ -301,7 +280,8 @@ exports.createThreadPost = async (req, res, bot) => {
       });
     }
     const access_token = user.access_token;
-
+    // Get the user's tags from the database, if any
+    const tags = user.tags || []; // Default to empty array if no tags are found
     const THREADS_USER_ID = user.threadsUserId;
     logActivity(
       `User's access token: ${access_token}+"\nand thread user id :${THREADS_USER_ID}`
@@ -316,7 +296,11 @@ exports.createThreadPost = async (req, res, bot) => {
       // Decode the URL-encoded image URL and caption
       const decodedImageUrl = decodeURIComponent(imageUrl);
       const decodedCaption = decodeURIComponent(caption);
-      const captionWithTags = `${decodedCaption}\n\n${tags.join(" ")}`;
+      // Append the tags to the caption, if tags exist
+      const captionWithTags =
+        tags.length > 0
+          ? `${decodedCaption}\n\n${tags.join(" ")}`
+          : decodedCaption; // Only append tags if they exist
 
       params.append("media_type", "IMAGE");
       params.append("image_url", decodedImageUrl);
@@ -362,5 +346,44 @@ exports.createThreadPost = async (req, res, bot) => {
         error: error.message,
       });
     }
+  }
+};
+
+// Update tags for a user based on email
+exports.updateTags = async (req, res) => {
+  try {
+    const { email, tags } = req.body; // Extract email and tags from the request body
+
+    // Validate input
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    if (!Array.isArray(tags)) {
+      return res.status(400).json({ message: "Tags must be an array" });
+    }
+
+    // Find the user by email and update the tags
+    const updatedUser = await AdminUser.findOneAndUpdate(
+      { email }, // Find user by email
+      { tags }, // Replace old tags with new ones
+      { new: true } // Return the updated document
+    );
+
+    // If user not found, send an error response
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Return success response with updated user data
+    res.status(200).json({
+      message: "Tags updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    // Catch any errors and send a failure response
+    res.status(500).json({
+      message: "An error occurred while updating tags",
+      error: error.message,
+    });
   }
 };

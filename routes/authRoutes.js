@@ -16,19 +16,23 @@ const router = express.Router();
 // router.get("/auth/callback", authController.handleCallback);
 // router.post("/save-chatid", authController.saveChatId);
 
-
-// updated routes with the bot passed 
+// updated routes with the bot passed
 
 // Pass req.bot to the controller functions
-router.post("/register", (req, res) => authController.register(req, res, req.bot));
+router.post("/register", (req, res) =>
+  authController.register(req, res, req.bot)
+);
 router.post("/login", (req, res) => authController.login(req, res, req.bot));
 
-
 router.get("/auth", (req, res) => authController.startOAuth(req, res, req.bot));
-router.get("/auth/callback", (req, res) => authController.handleCallback(req, res, req.bot));
-router.post("/save-chatid", (req, res) => authController.saveChatId(req, res, req.bot));
-
-
-
+router.get("/auth/callback", (req, res) =>
+  authController.handleCallback(req, res, req.bot)
+);
+router.post("/save-chatid", (req, res) =>
+  authController.saveChatId(req, res, req.bot)
+);
+router.post("/updateTags", (req, res) =>
+  authController.updateTags(req, res, req.bot)
+);
 
 module.exports = router;
