@@ -257,7 +257,29 @@ const getThreadUserId = async (accessToken) => {
 exports.createThreadPost = async (req, res, bot) => {
   const { imageUrl, caption, email } = req.body; // Assuming these are sent in the request body
   // logActivity("Received request body:", req.body); // Add this line
-
+  // Define the common tags
+  const tags = [
+    "#TradingTips",
+    "#CryptoAnalysis",
+    "#StockMarket",
+    "#MarketTrends",
+    "#CryptoTrading",
+    "#StockAnalysis",
+    "#Investing",
+    "#TraderLife",
+    "#CryptoInvesting",
+    "#TechnicalAnalysis",
+    "#MarketInsights",
+    "#BreakoutStocks",
+    "#TradeSmart",
+    "#StockTips",
+    "#CryptoUpdates",
+    "#InvestWisely",
+    "#TradingCommunity",
+    "#FinancialFreedom",
+    "#MarketNews",
+    "#TradeWithConfidence",
+  ];
   // Log received parameters
   // logActivity("Received parameters:", { imageUrl, caption, email });
 
@@ -294,9 +316,11 @@ exports.createThreadPost = async (req, res, bot) => {
       // Decode the URL-encoded image URL and caption
       const decodedImageUrl = decodeURIComponent(imageUrl);
       const decodedCaption = decodeURIComponent(caption);
+      const captionWithTags = `${decodedCaption}\n\n${tags.join(" ")}`;
+
       params.append("media_type", "IMAGE");
       params.append("image_url", decodedImageUrl);
-      params.append("text", decodedCaption);
+      params.append("text", captionWithTags);
       params.append("access_token", access_token);
 
       // Send the POST request to create the thread post
