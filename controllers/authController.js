@@ -284,6 +284,7 @@ exports.createThreadPost = async (req, res, bot) => {
     );
 
     const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
+    logActivity("Creating post URL:", url);
 
     const params = new URLSearchParams();
     const decodedImageUrl = decodeURIComponent(imageUrl);
@@ -293,13 +294,17 @@ exports.createThreadPost = async (req, res, bot) => {
         ? `${decodedCaption}\n\n${tags.join(" ")}`
         : decodedCaption;
 
+    logActivity("Decoded image URL:", decodedImageUrl);
+    logActivity("Caption with tags:", captionWithTags);
+
     params.append("media_type", "IMAGE");
     params.append("image_url", decodedImageUrl);
     params.append("text", captionWithTags);
     params.append("access_token", access_token);
+    logActivity("Request parameters:", Object.fromEntries(params));
 
     const response = await axios.post(url, params);
-    logActivity("Initial post response:", response.data);
+    logActivity("Initial post response:", JSON.stringify(response.data));
 
     if (response.status === 200) {
       const creation_id = response.data.id;
@@ -330,10 +335,18 @@ exports.createThreadPost = async (req, res, bot) => {
       });
     }
   } catch (error) {
-    logActivity("Error in createThreadPost:", error);
+    const errorDetails = {
+      message: error.message,
+      status: error.response?.status,
+      responseData: error.response?.data,
+      requestConfig: error.config,
+    };
+
+    logActivity("Error in createThreadPost:", JSON.stringify(errorDetails));
+    
     return res.status(500).json({
       message: "An error occurred while processing the request.",
-      error: error.message,
+      error: errorDetails
     });
   }
 };
