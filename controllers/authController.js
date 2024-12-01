@@ -255,20 +255,15 @@ const getThreadUserId = async (accessToken) => {
 };
 
 exports.createThreadPost = async (req, res, bot) => {
-  const { imageUrl, caption, email } = req.body; // Assuming these are sent in the request body
-  // logActivity("Received request body:", req.body); // Add this line
-  // Define the common tags
+  try {
+    const { imageUrl, caption, email } = req.body;
 
-  // Log received parameters
-  // logActivity("Received parameters:", { imageUrl, caption, email });
+    if (!imageUrl || !caption || !email) {
+      return res.status(400).json({
+        message: "Missing required parameters: imageUrl, caption, or access_token.",
+      });
+    }
 
-  // Check if required parameters are provided
-  if (!imageUrl || !caption || !email) {
-    return res.status(400).json({
-      message:
-        "Missing required parameters: imageUrl, caption, or access_token.",
-    });
-  } else {
     const user = await AdminUser.findOne(
       { email },
       "threadsUserId access_token tags"
@@ -279,73 +274,67 @@ exports.createThreadPost = async (req, res, bot) => {
         message: "User not found or access token missing.",
       });
     }
+
     const access_token = user.access_token;
-    // Get the user's tags from the database, if any
-    const tags = user.tags || []; // Default to empty array if no tags are found
+    const tags = user.tags || [];
     const THREADS_USER_ID = user.threadsUserId;
+    
     logActivity(
       `User's access token: ${access_token}+"\nand thread user id :${THREADS_USER_ID}`
     );
 
-    try {
-      // Construct the API request URL
-      const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
+    const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
 
-      // Prepare the payload
-      const params = new URLSearchParams();
-      // Decode the URL-encoded image URL and caption
-      const decodedImageUrl = decodeURIComponent(imageUrl);
-      const decodedCaption = decodeURIComponent(caption);
-      // Append the tags to the caption, if tags exist
-      const captionWithTags =
-        tags.length > 0
-          ? `${decodedCaption}\n\n${tags.join(" ")}`
-          : decodedCaption; // Only append tags if they exist
+    const params = new URLSearchParams();
+    const decodedImageUrl = decodeURIComponent(imageUrl);
+    const decodedCaption = decodeURIComponent(caption);
+    const captionWithTags =
+      tags.length > 0
+        ? `${decodedCaption}\n\n${tags.join(" ")}`
+        : decodedCaption;
 
-      params.append("media_type", "IMAGE");
-      params.append("image_url", decodedImageUrl);
-      params.append("text", captionWithTags);
-      params.append("access_token", access_token);
+    params.append("media_type", "IMAGE");
+    params.append("image_url", decodedImageUrl);
+    params.append("text", captionWithTags);
+    params.append("access_token", access_token);
 
-      // Send the POST request to create the thread post
-      const response = await axios.post(url, params);
+    const response = await axios.post(url, params);
+    logActivity("Initial post response:", response.data);
 
-      // Check for successful response
-      if (response.status === 200) {
-        const creation_id = response.data.id; // Get the creation ID
+    if (response.status === 200) {
+      const creation_id = response.data.id;
 
-        // Now call the threads_publish endpoint with the creation_id
-        const publishUrl = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads_publish?creation_id=${creation_id}&access_token=${access_token}`;
+      const publishUrl = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads_publish?creation_id=${creation_id}&access_token=${access_token}`;
 
-        // Send the POST request to publish the thread
-        const publishResponse = await axios.post(publishUrl);
+      const publishResponse = await axios.post(publishUrl);
+      logActivity("Publish response:", publishResponse.data);
 
-        // Check if publishing was successful
-        if (publishResponse.status === 200) {
-          return res.status(200).json({
-            message: "Post created and published successfully!",
-            data: publishResponse.data,
-          });
-        } else {
-          return res.status(publishResponse.status).json({
-            message: "Failed to publish post",
-            error: publishResponse.data,
-          });
-        }
+      if (publishResponse.status === 200) {
+        logActivity("Post created and published successfully", publishResponse.data);
+        return res.status(200).json({
+          message: "Post created and published successfully!",
+          data: publishResponse.data,
+        });
       } else {
-        logActivity("error here respdata", response.data);
-        return res.status(response.status).json({
-          message: "Failed to create post",
-          error: response.data,
+        logActivity("Failed to publish post", publishResponse.data);
+        return res.status(publishResponse.status).json({
+          message: "Failed to publish post",
+          error: publishResponse.data,
         });
       }
-    } catch (error) {
-      logActivity("Error creating thread post:", error);
-      return res.status(500).json({
-        message: "An error occurred while creating the post.",
-        error: error.message,
+    } else {
+      logActivity("error here respdata", response.data);
+      return res.status(response.status).json({
+        message: "Failed to create post",
+        error: response.data,
       });
     }
+  } catch (error) {
+    logActivity("Error in createThreadPost:", error);
+    return res.status(500).json({
+      message: "An error occurred while processing the request.",
+      error: error.message,
+    });
   }
 };
 
