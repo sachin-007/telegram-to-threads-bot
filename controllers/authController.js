@@ -258,7 +258,33 @@ exports.createThreadPost = async (req, res, bot) => {
   try {
     logActivity("Starting createThreadPost request");
     const { imageUrl, caption, email } = req.body;
-    logActivity("Request body:", { imageUrl, caption, email });
+    
+    // Old code
+    // logActivity("Request body:", { imageUrl, caption, email });
+    // const decodedImageUrl = decodeURIComponent(imageUrl);
+    // const decodedCaption = decodeURIComponent(caption);
+
+    // New code - with validation and better logging
+    logActivity("Raw request values:", { imageUrl, caption, email });
+
+    try {
+      new URL(imageUrl); // Validate URL format
+    } catch (urlError) {
+      logActivity("Invalid image URL format:", imageUrl);
+      return res.status(400).json({
+        message: "Invalid image URL format",
+        error: urlError.message
+      });
+    }
+
+    const decodedImageUrl = encodeURI(decodeURIComponent(imageUrl));
+    const decodedCaption = decodeURIComponent(caption);
+    
+    logActivity("Processed URLs:", {
+      originalImageUrl: imageUrl,
+      decodedImageUrl: decodedImageUrl,
+      decodedCaption: decodedCaption
+    });
 
     if (!imageUrl || !caption || !email) {
       logActivity("Missing required parameters");
@@ -292,14 +318,11 @@ exports.createThreadPost = async (req, res, bot) => {
     logActivity("Creating post URL:", url);
 
     const params = new URLSearchParams();
-    const decodedImageUrl = decodeURIComponent(imageUrl);
-    const decodedCaption = decodeURIComponent(caption);
     const captionWithTags =
       tags.length > 0
         ? `${decodedCaption}\n\n${tags.join(" ")}`
         : decodedCaption;
 
-    logActivity("Decoded image URL:", decodedImageUrl);
     logActivity("Caption with tags:", captionWithTags);
 
     params.append("media_type", "IMAGE");
