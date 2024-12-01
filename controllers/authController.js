@@ -256,17 +256,31 @@ const getThreadUserId = async (accessToken) => {
 
 exports.createThreadPost = async (req, res, bot) => {
   try {
-    logActivity("Starting createThreadPost request");
-    const { imageUrl, caption, email } = req.body;
-    
     // Old code
-    // logActivity("Request body:", { imageUrl, caption, email });
+    // logActivity("Starting createThreadPost request");
+    // const { imageUrl, caption, email } = req.body;
+    
+    // New code - with better logging sequence
+    const { imageUrl, caption, email } = req.body;
+    logActivity("Starting createThreadPost request with data:", { imageUrl, caption, email });
+
+    if (!imageUrl || !caption || !email) {
+      const missingParams = [];
+      if (!imageUrl) missingParams.push('imageUrl');
+      if (!caption) missingParams.push('caption');
+      if (!email) missingParams.push('email');
+      
+      logActivity("Missing parameters:", missingParams);
+      return res.status(400).json({
+        message: `Missing required parameters: ${missingParams.join(', ')}`
+      });
+    }
+
+    // Old code
     // const decodedImageUrl = decodeURIComponent(imageUrl);
     // const decodedCaption = decodeURIComponent(caption);
 
-    // New code - with validation and better logging
-    logActivity("Raw request values:", { imageUrl, caption, email });
-
+    // New code - with URL validation and better processing
     try {
       new URL(imageUrl); // Validate URL format
     } catch (urlError) {
@@ -277,8 +291,8 @@ exports.createThreadPost = async (req, res, bot) => {
       });
     }
 
-    const decodedImageUrl = encodeURI(decodeURIComponent(imageUrl));
-    const decodedCaption = decodeURIComponent(caption);
+    const decodedImageUrl = encodeURI(decodeURIComponent(imageUrl.trim()));
+    const decodedCaption = decodeURIComponent(caption.trim());
     
     logActivity("Processed URLs:", {
       originalImageUrl: imageUrl,
@@ -286,19 +300,27 @@ exports.createThreadPost = async (req, res, bot) => {
       decodedCaption: decodedCaption
     });
 
-    if (!imageUrl || !caption || !email) {
-      logActivity("Missing required parameters");
-      return res.status(400).json({
-        message: "Missing required parameters: imageUrl, caption, or access_token.",
-      });
-    }
+    // Old code
+    // const user = await AdminUser.findOne(
+    //   { email },
+    //   "threadsUserId access_token tags"
+    // );
 
+    // New code - with better logging
     const user = await AdminUser.findOne(
       { email },
       "threadsUserId access_token tags"
     );
     logActivity("Found user:", user);
 
+    // Old code
+    // if (!user || !user.access_token) {
+    //   return res.status(400).json({
+    //     message: "User not found or access token missing.",
+    //   });
+    // }
+
+    // New code - with logging
     if (!user || !user.access_token) {
       logActivity("User not found or missing access token");
       return res.status(400).json({
@@ -331,6 +353,11 @@ exports.createThreadPost = async (req, res, bot) => {
     params.append("access_token", access_token);
     logActivity("Request parameters:", Object.fromEntries(params));
 
+    // Old code
+    // const response = await axios.post(url, params);
+    // logActivity("Initial post response:", response.data);
+
+    // New code - with better response logging
     const response = await axios.post(url, params);
     logActivity("Initial post response:", JSON.stringify(response.data));
 
@@ -365,6 +392,14 @@ exports.createThreadPost = async (req, res, bot) => {
       });
     }
   } catch (error) {
+    // Old code
+    // logActivity("Error in createThreadPost:", error);
+    // return res.status(500).json({
+    //   message: "An error occurred while processing the request.",
+    //   error: error.message,
+    // });
+
+    // New code - with detailed error logging
     const errorDetails = {
       message: error.message,
       status: error.response?.status,
