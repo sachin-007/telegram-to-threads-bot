@@ -256,9 +256,12 @@ const getThreadUserId = async (accessToken) => {
 
 exports.createThreadPost = async (req, res, bot) => {
   try {
+    logActivity("Starting createThreadPost request");
     const { imageUrl, caption, email } = req.body;
+    logActivity("Request body:", { imageUrl, caption, email });
 
     if (!imageUrl || !caption || !email) {
+      logActivity("Missing required parameters");
       return res.status(400).json({
         message: "Missing required parameters: imageUrl, caption, or access_token.",
       });
@@ -268,8 +271,10 @@ exports.createThreadPost = async (req, res, bot) => {
       { email },
       "threadsUserId access_token tags"
     );
+    logActivity("Found user:", user);
 
     if (!user || !user.access_token) {
+      logActivity("User not found or missing access token");
       return res.status(400).json({
         message: "User not found or access token missing.",
       });
@@ -280,7 +285,7 @@ exports.createThreadPost = async (req, res, bot) => {
     const THREADS_USER_ID = user.threadsUserId;
     
     logActivity(
-      `User's access token: ${access_token}+"\nand thread user id :${THREADS_USER_ID}`
+      `User's access token: ${access_token}\nand thread user id: ${THREADS_USER_ID}`
     );
 
     const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
@@ -308,27 +313,29 @@ exports.createThreadPost = async (req, res, bot) => {
 
     if (response.status === 200) {
       const creation_id = response.data.id;
+      logActivity("Got creation_id:", creation_id);
 
       const publishUrl = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads_publish?creation_id=${creation_id}&access_token=${access_token}`;
+      logActivity("Publishing to URL:", publishUrl);
 
       const publishResponse = await axios.post(publishUrl);
-      logActivity("Publish response:", publishResponse.data);
+      logActivity("Publish response:", JSON.stringify(publishResponse.data));
 
       if (publishResponse.status === 200) {
-        logActivity("Post created and published successfully", publishResponse.data);
+        logActivity("Post created and published successfully", JSON.stringify(publishResponse.data));
         return res.status(200).json({
           message: "Post created and published successfully!",
           data: publishResponse.data,
         });
       } else {
-        logActivity("Failed to publish post", publishResponse.data);
+        logActivity("Failed to publish post", JSON.stringify(publishResponse.data));
         return res.status(publishResponse.status).json({
           message: "Failed to publish post",
           error: publishResponse.data,
         });
       }
     } else {
-      logActivity("error here respdata", response.data);
+      logActivity("Error in initial post response", JSON.stringify(response.data));
       return res.status(response.status).json({
         message: "Failed to create post",
         error: response.data,
