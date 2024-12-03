@@ -256,55 +256,29 @@ const getThreadUserId = async (accessToken) => {
 
 exports.createThreadPost = async (req, res, bot) => {
   try {
-    // Old code
-    // logActivity("Starting createThreadPost request");
-    // const { imageUrl, caption, email } = req.body;
-    
-    // New code - with better logging sequence
+    logActivity("Starting createThreadPost request");
     const { imageUrl, caption, email } = req.body;
-    logActivity("imageUrl: " + imageUrl);
-    logActivity("caption: " + caption);
-    logActivity("email: " + email);
-    logActivity("Starting createThreadPost request with data:", { imageUrl, caption, email });
-
-    if (!imageUrl || !caption || !email) {
-      const missingParams = [];
-      if (!imageUrl) missingParams.push('imageUrl');
-      if (!caption) missingParams.push('caption');
-      if (!email) missingParams.push('email');
-      
-      logActivity("Missing parameters:", missingParams);
-      return res.status(400).json({
-        message: `Missing required parameters: ${missingParams.join(', ')}`
-      });
-    }
-
+    
     // Old code
+    logActivity("Request body:", { imageUrl, caption, email });
     // const decodedImageUrl = decodeURIComponent(imageUrl);
     // const decodedCaption = decodeURIComponent(caption);
 
-    // New code - with URL validation and better processing
-    // Sanitize and validate URL
-    // let sanitizedImageUrl = imageUrl.trim();
-    // try {
-    //   // Handle already encoded URLs
-    //   if (sanitizedImageUrl.includes('%')) {
-    //     sanitizedImageUrl = decodeURIComponent(sanitizedImageUrl);
-    //   }
-      
-    //   // Validate URL format
-    //   new URL(sanitizedImageUrl);
-      
-      // Double encode to handle special characters
-      const decodedImageUrl = encodeURIComponent(imageUrl);
-      const decodedCaption = decodeURIComponent(caption.trim());
-    // } catch (urlError) {
-    //   logActivity("Invalid image URL format:", imageUrl);
-    //   return res.status(400).json({
-    //     message: "Invalid image URL format", 
-    //     error: urlError.message
-    //   });
-    // }
+    // New code - with validation and better logging
+    logActivity("Raw request values:", { imageUrl, caption, email });
+
+    try {
+      new URL(imageUrl); // Validate URL format
+    } catch (urlError) {
+      logActivity("Invalid image URL format:", imageUrl);
+      return res.status(400).json({
+        message: "Invalid image URL format",
+        error: urlError.message
+      });
+    }
+
+    const decodedImageUrl = encodeURI(decodeURIComponent(imageUrl));
+    const decodedCaption = decodeURIComponent(caption);
     
     logActivity("Processed URLs:", {
       originalImageUrl: imageUrl,
@@ -312,27 +286,19 @@ exports.createThreadPost = async (req, res, bot) => {
       decodedCaption: decodedCaption
     });
 
-    // Old code
-    // const user = await AdminUser.findOne(
-    //   { email },
-    //   "threadsUserId access_token tags"
-    // );
+    if (!imageUrl || !caption || !email) {
+      logActivity("Missing required parameters");
+      return res.status(400).json({
+        message: "Missing required parameters: imageUrl, caption, or access_token.",
+      });
+    }
 
-    // New code - with better logging
     const user = await AdminUser.findOne(
       { email },
       "threadsUserId access_token tags"
     );
     logActivity("Found user:", user);
 
-    // Old code
-    // if (!user || !user.access_token) {
-    //   return res.status(400).json({
-    //     message: "User not found or access token missing.",
-    //   });
-    // }
-
-    // New code - with logging
     if (!user || !user.access_token) {
       logActivity("User not found or missing access token");
       return res.status(400).json({
@@ -365,11 +331,6 @@ exports.createThreadPost = async (req, res, bot) => {
     params.append("access_token", access_token);
     logActivity("Request parameters:", Object.fromEntries(params));
 
-    // Old code
-    // const response = await axios.post(url, params);
-    // logActivity("Initial post response:", response.data);
-
-    // New code - with better response logging
     const response = await axios.post(url, params);
     logActivity("Initial post response:", JSON.stringify(response.data));
 
@@ -404,14 +365,6 @@ exports.createThreadPost = async (req, res, bot) => {
       });
     }
   } catch (error) {
-    // Old code
-    // logActivity("Error in createThreadPost:", error);
-    // return res.status(500).json({
-    //   message: "An error occurred while processing the request.",
-    //   error: error.message,
-    // });
-
-    // New code - with detailed error logging
     const errorDetails = {
       message: error.message,
       status: error.response?.status,
