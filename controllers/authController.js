@@ -281,18 +281,27 @@ exports.createThreadPost = async (req, res, bot) => {
     // const decodedCaption = decodeURIComponent(caption);
 
     // New code - with URL validation and better processing
+    // Sanitize and validate URL
+    let sanitizedImageUrl = imageUrl.trim();
     try {
-      new URL(imageUrl); // Validate URL format
+      // Handle already encoded URLs
+      if (sanitizedImageUrl.includes('%')) {
+        sanitizedImageUrl = decodeURIComponent(sanitizedImageUrl);
+      }
+      
+      // Validate URL format
+      new URL(sanitizedImageUrl);
+      
+      // Double encode to handle special characters
+      const decodedImageUrl = encodeURIComponent(encodeURIComponent(sanitizedImageUrl));
+      const decodedCaption = decodeURIComponent(caption.trim());
     } catch (urlError) {
       logActivity("Invalid image URL format:", imageUrl);
       return res.status(400).json({
-        message: "Invalid image URL format",
+        message: "Invalid image URL format", 
         error: urlError.message
       });
     }
-
-    const decodedImageUrl = encodeURI(decodeURIComponent(imageUrl.trim()));
-    const decodedCaption = decodeURIComponent(caption.trim());
     
     logActivity("Processed URLs:", {
       originalImageUrl: imageUrl,
