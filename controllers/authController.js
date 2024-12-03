@@ -262,6 +262,9 @@ exports.createThreadPost = async (req, res, bot) => {
     
     // New code - with better logging sequence
     const { imageUrl, caption, email } = req.body;
+    logActivity("imageUrl: " + imageUrl);
+    logActivity("caption: " + caption);
+    logActivity("email: " + email);
     logActivity("Starting createThreadPost request with data:", { imageUrl, caption, email });
 
     if (!imageUrl || !caption || !email) {
@@ -282,26 +285,26 @@ exports.createThreadPost = async (req, res, bot) => {
 
     // New code - with URL validation and better processing
     // Sanitize and validate URL
-    let sanitizedImageUrl = imageUrl.trim();
-    try {
-      // Handle already encoded URLs
-      if (sanitizedImageUrl.includes('%')) {
-        sanitizedImageUrl = decodeURIComponent(sanitizedImageUrl);
-      }
+    // let sanitizedImageUrl = imageUrl.trim();
+    // try {
+    //   // Handle already encoded URLs
+    //   if (sanitizedImageUrl.includes('%')) {
+    //     sanitizedImageUrl = decodeURIComponent(sanitizedImageUrl);
+    //   }
       
-      // Validate URL format
-      new URL(sanitizedImageUrl);
+    //   // Validate URL format
+    //   new URL(sanitizedImageUrl);
       
       // Double encode to handle special characters
-      const decodedImageUrl = encodeURIComponent(encodeURIComponent(sanitizedImageUrl));
+      const decodedImageUrl = encodeURIComponent(imageUrl);
       const decodedCaption = decodeURIComponent(caption.trim());
-    } catch (urlError) {
-      logActivity("Invalid image URL format:", imageUrl);
-      return res.status(400).json({
-        message: "Invalid image URL format", 
-        error: urlError.message
-      });
-    }
+    // } catch (urlError) {
+    //   logActivity("Invalid image URL format:", imageUrl);
+    //   return res.status(400).json({
+    //     message: "Invalid image URL format", 
+    //     error: urlError.message
+    //   });
+    // }
     
     logActivity("Processed URLs:", {
       originalImageUrl: imageUrl,
