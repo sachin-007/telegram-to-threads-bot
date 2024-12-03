@@ -267,17 +267,17 @@ exports.createThreadPost = async (req, res, bot) => {
     // New code - with validation and better logging
     logActivity("Raw request values:", { imageUrl, caption, email });
 
-    try {
-      new URL(imageUrl); // Validate URL format
-    } catch (urlError) {
-      logActivity("Invalid image URL format:", imageUrl);
-      return res.status(400).json({
-        message: "Invalid image URL format",
-        error: urlError.message
-      });
-    }
+    // try {
+    //   new URL(imageUrl); // Validate URL format
+    // } catch (urlError) {
+    //   logActivity("Invalid image URL format:", imageUrl);
+    //   return res.status(400).json({
+    //     message: "Invalid image URL format",
+    //     error: urlError.message
+    //   });
+    // }
 
-    const decodedImageUrl = encodeURI(decodeURIComponent(imageUrl));
+    const decodedImageUrl = imageUrl;
     const decodedCaption = decodeURIComponent(caption);
     
     logActivity("Processed URLs:", {
