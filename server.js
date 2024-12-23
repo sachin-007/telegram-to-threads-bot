@@ -22,7 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 // Initialize the Telegram bot
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 logActivity("Telegram bot started. right with server");
-require("./controllers/bot")(bot);
+// require("./controllers/bot")(bot);
+require("./controllers/helperBot")(bot);
 
 // Configure express-session
 app.use(
