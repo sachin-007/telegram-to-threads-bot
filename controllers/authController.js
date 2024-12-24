@@ -407,8 +407,11 @@ const getThreadUserId = async (accessToken) => {
       }
 
   
-      const captionWithTags =
+      var captionWithTags =
         tags.length > 0 ? `${decodedCaption}\n\n${tags.join(" ")}` : decodedCaption;
+
+        // Limit the caption to a maximum of 500 characters
+        captionWithTags = captionWithTags.substring(0, 500);
   
       params.append("media_type", "IMAGE");
       params.append("image_url", decodedImageUrl);
