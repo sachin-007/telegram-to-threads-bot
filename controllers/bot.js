@@ -364,7 +364,7 @@ module.exports = (bot) => {
 
       // Get the file URL using Telegram API
       try {
-        const fileUrl = await bot.getFileLink(fileId);
+        const fileUrl = encodeURIComponent(await bot.getFileLink(fileId));
 
         // Prepare data to send to your backend
         const postData = {

@@ -392,19 +392,20 @@ const getThreadUserId = async (accessToken) => {
       // Construct the API request
       const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
       const params = new URLSearchParams();
-  
-      let decodedImageUrl, decodedCaption;
-  
+
+      let decodedImageUrl;
+      let decodedCaption = caption;
       try {
-        decodedImageUrl = decodeURIComponent(imageUrl);
-        decodedCaption = decodeURIComponent(caption);
+          // Decode the image URL
+          decodedImageUrl = decodeURIComponent(imageUrl);
       } catch (decodeError) {
-        logActivity(`Decoding error: ${decodeError.message}`);
-        return res.status(400).json({
-          message: "Invalid URL encoding in imageUrl or caption.",
-          error: decodeError.message,
-        });
+          // Log the decoding error and return a response
+          return res.status(400).json({
+              message: "Invalid URL encoding in imageUrl.",
+              error: decodeError.message,
+          });
       }
+
   
       const captionWithTags =
         tags.length > 0 ? `${decodedCaption}\n\n${tags.join(" ")}` : decodedCaption;
