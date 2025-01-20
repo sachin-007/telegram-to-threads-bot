@@ -9,7 +9,6 @@ const callRefreshRoute = async () => {
   try {
     // Make an HTTP request to the /refresh route (using axios)
     await axios.get("https://tmethreadbot.onrender.com/refresh"); // Replace with your URL
-    console.log("Refresh route called successfully");
   } catch (error) {
     console.error("Error calling refresh route:", error.message);
   }
