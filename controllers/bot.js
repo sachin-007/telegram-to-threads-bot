@@ -123,7 +123,7 @@ module.exports = (bot) => {
     try {
       // Sending a POST request with the data
       const response = await axios.post(
-        "https://tmethreadbot.onrender.com/api/auth/register",
+        `${process.env.SERVER_HOST}/api/auth/register`,
         {
           username,
           name,
@@ -144,12 +144,10 @@ module.exports = (bot) => {
     const messageParts = match[1].split(" "); // Expecting the format: "email password"
     const [email, password] = messageParts;
 
-    logActivity("Attempting login with:", email, password);
-
     try {
       // Replace with the actual backend URL
       const response = await axios.post(
-        "https://tmethreadbot.onrender.com/api/auth/login",
+        `${process.env.SERVER_HOST}/api/auth/login`,
         {
           email,
           password,
@@ -161,7 +159,7 @@ module.exports = (bot) => {
         loggedInUsers[chatId] = { email, loggedIn: true };
         // Save chatId in the database associated with this user
         await axios.post(
-          "https://tmethreadbot.onrender.com/api/auth/save-chatid",
+          `${process.env.SERVER_HOST}/api/auth/save-chatid`,
           {
             email,
             chatId,
@@ -180,10 +178,13 @@ module.exports = (bot) => {
   // /auth command to initiate the authorization process
   bot.onText(/\/auth/, async (msg) => {
     const chatId = msg.chat.id;
-    const user = loggedInUsers[chatId];
+    const user = await loggedInUsers[chatId];
+    
     const email = user.email;
-    const THREAD_APP_ID = process.enc.THREAD_APP_ID;
-    const THREADS_APP_SECRET = process.enc.THREADS_APP_SECRET;
+    console.log("loginnng user :: "+JSON.stringify(user));
+    
+    const THREAD_APP_ID = process.env.THREAD_APP_ID;
+    const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
 
     // Ensure the user is logged in before authorizing
     if (!user || !user.loggedIn) {
@@ -197,7 +198,7 @@ module.exports = (bot) => {
       // Send GET request to your server with THREAD_APP_ID, THREADS_APP_SECRET, and email
       const response = await axios({
         method: "get",
-        url: "https://tmethreadbot.onrender.com/api/auth/auth",
+        url: `${process.env.SERVER_HOST}/api/auth/auth`,
         headers: {
           "Content-Type": "application/json",
         },
@@ -356,7 +357,7 @@ module.exports = (bot) => {
 
         if (postData.imageUrl && postData.caption && postData.email) {
           const backendApiUrl =
-            "https://tmethreadbot.onrender.com/api/thread/post";
+            `${process.env.SERVER_HOST}/api/thread/post`;
           // Send data to your backend
           const response = await axios.post(backendApiUrl, postData);
 
@@ -404,7 +405,7 @@ module.exports = (bot) => {
       // Make an API call to the backend to update the tags
       try {
         const response = await axios.post(
-          "https://tmethreadbot.onrender.com/api/auth/updateTags",
+          `${process.env.SERVER_HOST}/api/auth/updateTags`,
           {
             email: email,
             tags: tags,
