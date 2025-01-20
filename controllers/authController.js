@@ -145,9 +145,30 @@ exports.handleCallback = async (req, res, bot) => {
       }
     );
 
-    const { access_token, user_id } = response.data;
+    var { access_token, user_id } = response.data;
+    await AdminUser.findOneAndUpdate(
+      { email },
+      { access_token, user_id, threadsUserId }
+    );
+
+    const longlive_endpointUrl = "https://graph.threads.net/access_token";
+    const responseLongLiveToken = await axios.get(longlive_endpointUrl, {
+      params: {
+        grant_type: "th_exchange_token",
+        client_secret: THREADS_APP_SECRET,
+        access_token: shortLivedAccessToken,
+      },
+    });
+    
+    // Extract data from the response
+    var { access_token, token_type, expires_in } = responseLongLiveToken.data;
+    await AdminUser.findOneAndUpdate(
+      { email },
+      { long_lived_user_access_token:access_token }
+    );
+
     logActivity(
-      `Successfully exchanged code for token. User ID: ${user_id}, Access Token: ${access_token}`
+      `Successfully exchanged code for token. User ID: ${user_id}`
     );
 
     // Now call getThreadUserId with the access token to fetch the THREADS_USER_ID
