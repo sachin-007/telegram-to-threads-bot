@@ -178,9 +178,12 @@ module.exports = (bot) => {
   });
 
   // /auth command to initiate the authorization process
-  bot.onText(/\/auth/, (msg) => {
+  bot.onText(/\/auth/, async (msg) => {
     const chatId = msg.chat.id;
     const user = loggedInUsers[chatId];
+    const email = user.email;
+    const THREAD_APP_ID = process.enc.THREAD_APP_ID;
+    const THREADS_APP_SECRET = process.enc.THREADS_APP_SECRET;
 
     // Ensure the user is logged in before authorizing
     if (!user || !user.loggedIn) {
@@ -188,66 +191,42 @@ module.exports = (bot) => {
       return;
     }
 
-    // Prompt for THREAD_APP_ID and start the authorization process
-    bot.sendMessage(chatId, "Please enter your THREAD_APP_ID:");
-    authSteps[chatId] = { step: "awaiting_app_id" };
-  });
+    // authentication below 
 
-  // Handle messages to capture THREAD_APP_ID and THREADS_APP_SECRET from the user
-  bot.on("message", async (msg) => {
-    const chatId = msg.chat.id;
-    const user = loggedInUsers[chatId];
-    const userStep = authSteps[chatId] || {};
-
-    // Capture THREAD_APP_ID
-    if (userStep.step === "awaiting_app_id") {
-      authSteps[chatId].THREAD_APP_ID = msg.text;
-      bot.sendMessage(chatId, "Please enter your THREADS_APP_SECRET:");
-      authSteps[chatId].step = "awaiting_app_secret";
-
-      // Capture THREADS_APP_SECRET and proceed with the authorization request
-    } else if (userStep.step === "awaiting_app_secret") {
-      authSteps[chatId].THREADS_APP_SECRET = msg.text;
-      const { THREAD_APP_ID, THREADS_APP_SECRET } = authSteps[chatId];
-      const email = user.email;
-
-      try {
-        // Send GET request to your server with THREAD_APP_ID, THREADS_APP_SECRET, and email
-        const response = await axios({
-          method: "get",
-          url: "https://tmethreadbot.onrender.com/api/auth/auth",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          data: {
-            email,
-            THREAD_APP_ID,
-            THREADS_APP_SECRET,
-          },
-        });
-        // If the server provides an authorization URL, send it to the user
-        if (response.status === 200 && response.data.authUrl) {
-          bot.sendMessage(
-            chatId,
-            `Please authorize the application by visiting this URL: ${response.data.authUrl}`
-          );
-        } else {
-          bot.sendMessage(
-            chatId,
-            "Authorization failed. Please check your credentials."
-          );
-        }
-      } catch (error) {
-        // logActivity("Error initiating OAuth:", error);
+    try {
+      // Send GET request to your server with THREAD_APP_ID, THREADS_APP_SECRET, and email
+      const response = await axios({
+        method: "get",
+        url: "https://tmethreadbot.onrender.com/api/auth/auth",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: {
+          email,
+          THREAD_APP_ID,
+          THREADS_APP_SECRET,
+        },
+      });
+      // If the server provides an authorization URL, send it to the user
+      if (response.status === 200 && response.data.authUrl) {
         bot.sendMessage(
           chatId,
-          "An error occurred while initiating OAuth. Please try again."
+          `Please authorize the application by visiting this URL: ${response.data.authUrl}`
+        );
+      } else {
+        bot.sendMessage(
+          chatId,
+          "Authorization failed. Please check your credentials."
         );
       }
-
-      // Clean up the step tracking for this user
-      delete authSteps[chatId];
+    } catch (error) {
+      // logActivity("Error initiating OAuth:", error);
+      bot.sendMessage(
+        chatId,
+        "An error occurred while initiating OAuth. Please try again."
+      );
     }
+    
   });
 
   // Endpoint to receive notification from the server with access token and send to Telegram user
