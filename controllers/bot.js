@@ -179,8 +179,11 @@ module.exports = (bot) => {
   bot.onText(/\/auth/, async (msg) => {
     const chatId = msg.chat.id;
     const user = await loggedInUsers[chatId];
-    
-    const email = user.email;
+    if (user && user.email) {
+      const email = user.email;
+      // Do something with the email
+      console.log("User's email:", email);
+    }
     console.log("loginnng user :: "+JSON.stringify(user));
     
     const THREAD_APP_ID = process.env.THREAD_APP_ID;
