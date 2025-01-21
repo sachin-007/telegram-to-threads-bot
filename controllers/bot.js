@@ -179,21 +179,19 @@ module.exports = (bot) => {
   bot.onText(/\/auth/, async (msg) => {
     const chatId = msg.chat.id;
     const user = await loggedInUsers[chatId];
-    if (user && user.email) {
-      const email = user.email;
-      // Do something with the email
-      console.log("User's email:", email);
-    }
-    console.log("loginnng user :: "+JSON.stringify(user));
     
-    const THREAD_APP_ID = process.env.THREAD_APP_ID;
-    const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
-
-    // Ensure the user is logged in before authorizing
     if (!user || !user.loggedIn) {
       bot.sendMessage(chatId, "Please log in before authorizing the bot.");
       return;
     }
+  
+    if (!user.email) {
+      bot.sendMessage(chatId, "No email found for the logged-in user.");
+      return;
+    }
+        
+    const THREAD_APP_ID = process.env.THREAD_APP_ID;
+    const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
 
     // authentication below 
 
