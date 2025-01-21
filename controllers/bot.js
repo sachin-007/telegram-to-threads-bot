@@ -192,7 +192,6 @@ module.exports = (bot) => {
         
     const THREAD_APP_ID = process.env.THREAD_APP_ID;
     const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
-
     // authentication below 
 
     try {
@@ -204,7 +203,7 @@ module.exports = (bot) => {
           "Content-Type": "application/json",
         },
         data: {
-          email,
+          email:user.email,
           THREAD_APP_ID,
           THREADS_APP_SECRET,
         },
@@ -222,7 +221,7 @@ module.exports = (bot) => {
         );
       }
     } catch (error) {
-      // logActivity("Error initiating OAuth:", error);
+      logActivity("Error initiating OAuth:", error);
       bot.sendMessage(
         chatId,
         "An error occurred while initiating OAuth. Please try again."
