@@ -275,103 +275,6 @@ const getThreadUserId = async (accessToken) => {
   }
 };
 
-  // exports.createThreadPost = async (req, res, bot) => {
-  //   const { imageUrl, caption, email } = req.body; // Assuming these are sent in the request body
-  //   logActivity(`recived things : ${imageUrl}+"\n"+ ${caption}+"\n"+ ${email}`)
-  //   // logActivity("Received request body:", req.body); // Add this line
-  //   // Define the common tags
-
-  //   // Log received parameters
-  //   // logActivity("Received parameters:", { imageUrl, caption, email });
-
-  //   // Check if required parameters are provided
-  //   if (!imageUrl || !caption || !email) {
-  //     return res.status(400).json({
-  //       message:
-  //         "Missing required parameters: imageUrl, caption, or access_token.",
-  //     });
-  //   } else {
-  //     const user = await AdminUser.findOne(
-  //       { email },
-  //       "threadsUserId access_token tags"
-  //     );
-
-  //     logActivity("the data i have "+ JSON.stringify(user));
-
-  //     if (!user || !user.access_token) {
-  //       return res.status(400).json({
-  //         message: "User not found or access token missing.",
-  //       });
-  //     }
-  //     const access_token = user.access_token;
-  //     // Get the user's tags from the database, if any
-  //     const tags = user.tags || []; // Default to empty array if no tags are found
-  //     const THREADS_USER_ID = user.threadsUserId;
-  //     console.log(
-  //       `User's access token: ${access_token}+"\nand thread user id :${THREADS_USER_ID}`
-  //     );
-
-  //     try {
-  //       // Construct the API request URL
-  //       const url = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads`;
-
-  //       // Prepare the payload
-  //       const params = new URLSearchParams();
-  //       // Decode the URL-encoded image URL and caption
-  //       const decodedImageUrl = decodeURIComponent(imageUrl);
-  //       const decodedCaption = decodeURIComponent(caption);
-  //       // Append the tags to the caption, if tags exist
-  //       const captionWithTags =
-  //         tags.length > 0
-  //           ? `${decodedCaption}\n\n${tags.join(" ")}`
-  //           : decodedCaption; // Only append tags if they exist
-
-  //       params.append("media_type", "IMAGE");
-  //       params.append("image_url", decodedImageUrl);
-  //       params.append("text", captionWithTags);
-  //       params.append("access_token", access_token);
-
-  //       // Send the POST request to create the thread post
-  //       const response = await axios.post(url, params);
-
-  //       // Check for successful response
-  //       if (response.status === 200) {
-  //         const creation_id = response.data.id; // Get the creation ID
-
-  //         // Now call the threads_publish endpoint with the creation_id
-  //         const publishUrl = `https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads_publish?creation_id=${creation_id}&access_token=${access_token}`;
-
-  //         // Send the POST request to publish the thread
-  //         const publishResponse = await axios.post(publishUrl);
-
-  //         // Check if publishing was successful
-  //         if (publishResponse.status === 200) {
-  //           return res.status(200).json({
-  //             message: "Post created and published successfully!",
-  //             data: publishResponse.data,
-  //           });
-  //         } else {
-  //           return res.status(publishResponse.status).json({
-  //             message: "Failed to publish post",
-  //             error: publishResponse.data,
-  //           });
-  //         }
-  //       } else {
-  //         logActivity("error here respdata", response.data);
-  //         return res.status(response.status).json({
-  //           message: "Failed to create post",
-  //           error: response.data,
-  //         });
-  //       }
-  //     } catch (error) {
-  //       logActivity("Error creating thread post:", error);
-  //       return res.status(500).json({
-  //         message: "An error occurred while creating the post.",
-  //         error: error.message,
-  //       });
-  //     }
-  //   }
-  // };
 
   exports.createThreadPost = async (req, res, bot) => {
     const { imageUrl, caption, email } = req.body;
@@ -390,7 +293,7 @@ const getThreadUserId = async (accessToken) => {
       // Retrieve the user data from the database
       const user = await AdminUser.findOne(
         { email },
-        "threadsUserId access_token tags"
+        "threadsUserId access_token tags long_lived_user_access_token"
       );
   
       if (!user) {
@@ -399,7 +302,7 @@ const getThreadUserId = async (accessToken) => {
         });
       }
   
-      const { access_token, threadsUserId: THREADS_USER_ID, tags = [] } = user;
+      const { access_token:long_lived_user_access_token, threadsUserId: THREADS_USER_ID, tags = [] } = user;
   
       if (!access_token) {
         return res.status(400).json({
