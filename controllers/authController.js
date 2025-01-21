@@ -95,6 +95,131 @@ exports.startOAuth = async (req, res, bot) => {
   res.json({ authUrl });
 };
 
+// // Step 2: Handle Redirect and Exchange Code for Token
+// exports.handleCallback = async (req, res, bot) => {
+//   const { code, error, error_description, state } = req.query;
+//   const email = decodeURIComponent(state);
+
+//   if (error) {
+//     logActivity(
+//       `OAuth error: ${error_description || "No description available."}`
+//     );
+//     return res.status(400).json({
+//       message: `OAuth error: ${
+//         error_description || "No description available."
+//       }`,
+//     });
+//   }
+
+//   if (!code) {
+//     logActivity("Authorization code not provided.");
+//     return res.status(400).json({ message: "No authorization code provided." });
+//   }
+
+//   try {
+//     const user = await AdminUser.findOne(
+//       { email },
+//       "THREAD_APP_ID THREADS_APP_SECRET chatId"
+//     );
+
+//     if (!user || !user.THREAD_APP_ID || !user.THREADS_APP_SECRET) {
+//       return res.status(404).json({
+//         error:
+//           "User or required credentials (THREAD_APP_ID, THREADS_APP_SECRET,) not found",
+//       });
+//     }
+
+//     const { THREAD_APP_ID, THREADS_APP_SECRET, chatId } = user;
+
+//     const response = await axios.post(
+//       "https://graph.threads.net/oauth/access_token",
+//       null,
+//       {
+//         params: {
+//           client_id: THREAD_APP_ID,
+//           client_secret: THREADS_APP_SECRET,
+//           grant_type: "authorization_code",
+//           redirect_uri: REDIRECT_URI,
+//           code,
+//         },
+//       }
+//     );
+
+//     var { access_token, user_id } = response.data;
+//     await AdminUser.findOneAndUpdate(
+//       { email },
+//       { access_token, user_id, threadsUserId }
+//     );
+
+//     const longlive_endpointUrl = "https://graph.threads.net/access_token";
+//     const responseLongLiveToken = await axios.get(longlive_endpointUrl, {
+//       params: {
+//         grant_type: "th_exchange_token",
+//         client_secret: THREADS_APP_SECRET,
+//         access_token: shortLivedAccessToken,
+//       },
+//     });
+    
+//     // Extract data from the response
+//     var { access_token, token_type, expires_in } = responseLongLiveToken.data;
+//     await AdminUser.findOneAndUpdate(
+//       { email },
+//       { long_lived_user_access_token:access_token }
+//     );
+
+//     logActivity(
+//       `Successfully exchanged code for token. User ID: ${user_id}`
+//     );
+
+//     // Now call getThreadUserId with the access token to fetch the THREADS_USER_ID
+//     const threadsUserId = await getThreadUserId(access_token);
+
+//     await AdminUser.findOneAndUpdate(
+//       { email },
+//       { access_token, user_id, threadsUserId }
+//     );
+
+//     logActivity(`Successfully fetched THREADS_USER_ID: ${threadsUserId}`);
+
+//     // commented for bot offline
+//     // Send the access token to the user via Telegram
+//     if (chatId) {
+//       loggedInUsers[chatId] = { email, loggedIn: true, accessToken: true };
+
+//       await bot.sendMessage(chatId, `Authorization successful!`);
+//     } else {
+//       console.log(`Chat ID not found for user with email: ${email}`);
+//     }
+//     res.json({ access_token, user_id });
+//   } catch (error) {
+//     if (error.response) {
+//       const { status, data } = error.response;
+//       logActivity(
+//         `API error: Status ${status}, Response: ${JSON.stringify(data)}`
+//       );
+//       res
+//         .status(status)
+//         .json({ message: "Error exchanging code for token.", details: data });
+//     } else if (error.request) {
+//       logActivity(
+//         "No response received from Threads API. Possible network error."
+//       );
+//       res
+//         .status(500)
+//         .json({ message: "No response received from Threads API." });
+//     } else {
+//       logActivity(`Unknown error: ${error.message}`);
+//       res.status(500).json({
+//         message: "An unknown error occurred.",
+//         details: error.message,
+//       });
+//     }
+//   }
+// };
+
+
+// new code 
+
 // Step 2: Handle Redirect and Exchange Code for Token
 exports.handleCallback = async (req, res, bot) => {
   const { code, error, error_description, state } = req.query;
@@ -125,7 +250,7 @@ exports.handleCallback = async (req, res, bot) => {
     if (!user || !user.THREAD_APP_ID || !user.THREADS_APP_SECRET) {
       return res.status(404).json({
         error:
-          "User or required credentials (THREAD_APP_ID, THREADS_APP_SECRET,) not found",
+          "User or required credentials (THREAD_APP_ID, THREADS_APP_SECRET) not found",
       });
     }
 
@@ -145,26 +270,23 @@ exports.handleCallback = async (req, res, bot) => {
       }
     );
 
-    var { access_token, user_id } = response.data;
-    await AdminUser.findOneAndUpdate(
-      { email },
-      { access_token, user_id, threadsUserId }
-    );
+    const { access_token, user_id } = response.data;
 
     const longlive_endpointUrl = "https://graph.threads.net/access_token";
     const responseLongLiveToken = await axios.get(longlive_endpointUrl, {
       params: {
         grant_type: "th_exchange_token",
         client_secret: THREADS_APP_SECRET,
-        access_token: shortLivedAccessToken,
+        access_token, // Use the access token from the first response
       },
     });
-    
+
     // Extract data from the response
-    var { access_token, token_type, expires_in } = responseLongLiveToken.data;
+    const { access_token: longLivedAccessToken } = responseLongLiveToken.data;
+
     await AdminUser.findOneAndUpdate(
       { email },
-      { long_lived_user_access_token:access_token }
+      { long_lived_user_access_token: longLivedAccessToken }
     );
 
     logActivity(
@@ -174,6 +296,7 @@ exports.handleCallback = async (req, res, bot) => {
     // Now call getThreadUserId with the access token to fetch the THREADS_USER_ID
     const threadsUserId = await getThreadUserId(access_token);
 
+    // Update the database with all necessary data
     await AdminUser.findOneAndUpdate(
       { email },
       { access_token, user_id, threadsUserId }
@@ -181,8 +304,7 @@ exports.handleCallback = async (req, res, bot) => {
 
     logActivity(`Successfully fetched THREADS_USER_ID: ${threadsUserId}`);
 
-    // commented for bot offline
-    // Send the access token to the user via Telegram
+    // Send the access token to the user via Telegram (if chatId exists)
     if (chatId) {
       loggedInUsers[chatId] = { email, loggedIn: true, accessToken: true };
 
@@ -190,6 +312,7 @@ exports.handleCallback = async (req, res, bot) => {
     } else {
       console.log(`Chat ID not found for user with email: ${email}`);
     }
+
     res.json({ access_token, user_id });
   } catch (error) {
     if (error.response) {
@@ -216,6 +339,7 @@ exports.handleCallback = async (req, res, bot) => {
     }
   }
 };
+
 
 exports.saveChatId = async (req, res, bot) => {
   const { email, chatId } = req.body;
