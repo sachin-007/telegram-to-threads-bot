@@ -156,7 +156,7 @@ module.exports = (bot) => {
 
       // Send success message if login is successful
       if (response.status == 200) {
-        loggedInUsers[chatId] = { email, loggedIn: true };
+        loggedInUsers[chatId] = { email, loggedIn: true,isXTweeterAuthed:false,isThreadAuthed:false };
         // Save chatId in the database associated with this user
         await axios.post(
           `${process.env.SERVER_HOST}/api/auth/save-chatid`,
@@ -176,7 +176,7 @@ module.exports = (bot) => {
   });
 
   // /auth command to initiate the authorization process
-  bot.onText(/\/auth/, async (msg) => {
+  bot.onText(/\/threadauth/, async (msg) => {
     const chatId = msg.chat.id;
     const user = await loggedInUsers[chatId];
     
@@ -323,16 +323,19 @@ module.exports = (bot) => {
     const chatId = msg.chat.id;
     const user = loggedInUsers[chatId];
     const email = user?.email;
+    const isThreadAuthed = user?.isThreadAuthed;
+    const isXTweeterAuthed = user?.isXTweeterAuthed;
+
 
     // Check if the user is logged in and authorized
     // logActivity(`User: ${JSON.stringify(user)}, Email: ${email}`);
-    if (!user || !user.loggedIn || !user.accessToken) {
-      bot.sendMessage(
-        chatId,
-        "You must be logged in and authorized to use this feature. Please complete the login and authorization steps."
-      );
-      return;
-    }
+    // if (!user || !user.loggedIn ) {
+    //   bot.sendMessage(
+    //     chatId,
+    //     "You must be logged in and authorized to use this feature. Please complete the login and authorization steps."
+    //   );
+    //   return;
+    // }
 
     // Check if the message contains an image
     if (msg.photo) {
@@ -353,19 +356,32 @@ module.exports = (bot) => {
           email: email,
         };
 
-        // logActivity(postData);
+        console.log(postData);
 
         if (postData.imageUrl && postData.caption && postData.email) {
-          const backendApiUrl =
-            `${process.env.SERVER_HOST}/api/thread/post`;
-          // Send data to your backend
-          const response = await axios.post(backendApiUrl, postData);
+          if(isThreadAuthed){
+            const backendApiUrl =
+              `${process.env.SERVER_HOST}/api/thread/post`;
+            // Send data to your backend
+            const response = await axios.post(backendApiUrl, postData);
+            // Respond to Telegram chat
+            bot.sendMessage(
+              chatId,
+              "Image and caption forwarded successfully to Thread!"
+            );
+          }
+          if(isXTweeterAuthed){
+            const backendApiUrl =
+              `${process.env.SERVER_HOST}/api/twitterx/posttotweet`;
+            // Send data to your backend
+            const response = await axios.post(backendApiUrl, postData);
+            // Respond to Telegram chat
+            bot.sendMessage(
+              chatId,
+              "Image and caption forwarded successfully to Twitter(X)!"
+            );
+          }
 
-          // Respond to Telegram chat
-          bot.sendMessage(
-            chatId,
-            "Image and caption forwarded successfully to Thread!"
-          );
         } else {
           bot.sendMessage(chatId, "Only caption or text or image is received.");
         }
@@ -425,5 +441,27 @@ module.exports = (bot) => {
       }
     });
   });
+
+  bot.onText(/\/xauth/, async (msg) => {
+    const chatId = msg.chat.id;
+    const user = await loggedInUsers[chatId];
+    if (!user || !user.loggedIn) {
+      bot.sendMessage(chatId, "Please log in before authorizing the bot.");
+      return;
+    }
+    const state = encodeURIComponent(user.email); // Encode email for safety
+    
+    const authTwitterxUri = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${process.env.SERVER_HOST}${process.env.X_REDIRECT_URI}&scope=tweet.read%20tweet.write%20users.read%20offline.access&state=${state}&code_challenge=challenge&code_challenge_method=plain`;
+    
+    // scope with media.upload
+    // const authTwitterxUri = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${process.env.SERVER_HOST}${process.env.X_REDIRECT_URI}&scope=tweet.read%20tweet.write%20users.read%20media.upload%20offline.access&state=${state}&code_challenge=challenge&code_challenge_method=plain`;
+
+
+    bot.sendMessage(
+      chatId,
+      `Please authorize the application by visiting this URL: ${authTwitterxUri}`
+    );    
+  });
+
 };
 // module.exports = bot;

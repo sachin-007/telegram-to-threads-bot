@@ -2,22 +2,33 @@ const express = require("express");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const googleauthRoutes = require("./routes/googleauthRoutes");
 const telegramRoutes = require("./routes/telegramRoutes");
 const TelegramBot = require("node-telegram-bot-api");
 const threadsRoutes = require("./routes/threadsRoutes");
+const twitterxRoutes = require("./routes/twitterxRoutes");
 const fs = require("fs");
 const path = require("path");
 const logActivity = require("./logActivity");
 const session = require("express-session");
 const mokaController = require("./controllers/mokaController");
 const { refresh } = require("./controllers/refreshRouteController");
+const cookieParser = require("cookie-parser");
+
 
 dotenv.config();
 connectDB();
 
 const app = express();
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+app.get('/', (req, res) => {
+  res.render('index');
+});
 
 // Initialize the Telegram bot
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
@@ -42,8 +53,10 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api", googleauthRoutes);
 app.use("/api/telegram", telegramRoutes);
 app.use("/api/thread", threadsRoutes);
+app.use("/api/twitterx", twitterxRoutes);
 app.use("/api", mokaController);
 app.use("/refresh", refresh);
 app.get("/privacy", (req, res) => {

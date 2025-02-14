@@ -24,6 +24,7 @@ router.post("/register", (req, res) =>
 );
 router.post("/login", (req, res) => authController.login(req, res, req.bot));
 
+// router.get("/genreftoken", (req, res) => authController.genreftoken(req, res, req.bot));
 router.get("/auth", (req, res) => authController.startOAuth(req, res, req.bot));
 router.get("/auth/callback", (req, res) =>
   authController.handleCallback(req, res, req.bot)

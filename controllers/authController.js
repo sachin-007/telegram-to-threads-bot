@@ -181,7 +181,7 @@ exports.handleCallback = async (req, res, bot) => {
     // commented for bot offline
     // Send the access token to the user via Telegram
     if (chatId) {
-      loggedInUsers[chatId] = { email, loggedIn: true, accessToken: true };
+      loggedInUsers[chatId] = { email, loggedIn: true, accessToken: true,isThreadAuthed: true };
 
       await bot.sendMessage(chatId, `Authorization successful!`);
     } else {
@@ -276,7 +276,7 @@ const getThreadUserId = async (accessToken) => {
         });
       }
   
-      const { long_lived_user_access_token,access_token, threadsUserId: THREADS_USER_ID, tags = [] } = user;
+      const { long_lived_user_access_token,access_token, threadsUserId: THREADS_USER_ID, tags = [],google_access_token, google_refresh_token,SPREADSHEET_ID } = user;
   
       if (!access_token||!long_lived_user_access_token) {
         return res.status(400).json({
@@ -337,6 +337,33 @@ const getThreadUserId = async (accessToken) => {
   
         if (publishResponse.status === 200) {
           logActivity("Post created and published successfully.");
+           
+          if (google_access_token) {
+            try {
+              // Set OAuth token
+              oauth2Client.setCredentials({ access_token: google_access_token });
+  
+              const sheets = google.sheets({ version: "v4", auth: oauth2Client });
+  
+              await sheets.spreadsheets.values.append({
+                spreadsheetId: SPREADSHEET_ID,
+                range: "Posts!A:E",
+                valueInputOption: "RAW",
+                insertDataOption: "INSERT_ROWS",
+                requestBody: {
+                  values: [
+                    [new Date().toISOString(), email, decodedImageUrl, captionWithTags, "Success"]
+                  ],
+                },
+              });
+  
+              logActivity("✅ Data added to Google Sheets successfully.");
+            } catch (sheetError) {
+              logActivity("❌ Error appending to Google Sheets:", sheetError);
+            }
+          } else {
+            logActivity("⚠ Google access token not found. Skipping Google Sheets update.");
+          }
           return res.status(200).json({
             message: "Post created and published successfully!",
             data: publishResponse.data,
