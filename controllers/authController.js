@@ -253,6 +253,7 @@ const getThreadUserId = async (accessToken) => {
 
   exports.createThreadPost = async (req, res, bot) => {
     const { imageUrl, caption, email } = req.body;
+    let retry = false;
   
     // Log the received request body for debugging
     logActivity(`Received request: imageUrl=${imageUrl}, caption=${caption}, email=${email}`);
@@ -360,8 +361,36 @@ const getThreadUserId = async (accessToken) => {
               });
   
               logActivity("✅ Data added to Google Sheets successfully.");
-            } catch (sheetError) {
-              logActivity(`❌ Error appending to Google Sheets:${sheetError}`, sheetError);
+            } catch (error) {
+              // ✅ Check if error is due to invalid credentials
+              if (
+                error.response &&
+                error.response.status === 401 &&
+                error.response.data.error === "invalid_grant" &&
+                !retry
+              ) {
+                logActivity("🔄 Access token expired. Refreshing token...");
+          
+                // ✅ Refresh the token and retry once
+                const newAccessToken = await refreshGoogleAccessToken(user);
+                oauth2Client.setCredentials({ access_token: newAccessToken });
+          
+                retry = true;
+          
+                const sheets = google.sheets({ version: "v4", auth: oauth2Client });
+          
+                await sheets.spreadsheets.values.append({
+                  spreadsheetId: user.spreadsheet_id,
+                  range: "Posts",
+                  valueInputOption: "RAW",
+                  insertDataOption: "INSERT_ROWS",
+                  requestBody: { values },
+                });
+          
+                logActivity("✅ Data added to Google Sheets successfully after token refresh.");
+              } else {
+                throw error;
+              }
             }
           } else {
             logActivity("⚠ Google access token not found. Skipping Google Sheets update.");
@@ -434,3 +463,30 @@ exports.updateTags = async (req, res) => {
     });
   }
 };
+
+// refresh access token from refresh token
+async function refreshGoogleAccessToken(user) {
+  try {
+    if (!user.google_refresh_token) {
+      throw new Error("Google refresh token is missing.");
+    }
+
+    // ✅ Set refresh token and request new access token
+    oauth2Client.setCredentials({ refresh_token: user.google_refresh_token });
+    const { credentials } = await oauth2Client.refreshAccessToken();
+
+    const newAccessToken = credentials.access_token;
+
+    // ✅ Update user with new access token
+    await AdminUser.updateOne(
+      { secondary_email: user.email },
+      { $set: { google_access_token: newAccessToken } }
+    );
+
+    logActivity(`🔄 Google Access Token refreshed successfully.`);
+    return newAccessToken;
+  } catch (error) {
+    logActivity(`❌ Failed to refresh Google access token: ${error.message}`);
+    throw error;
+  }
+}
