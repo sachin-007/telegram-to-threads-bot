@@ -27,7 +27,7 @@ const oauth2Client = new google.auth.OAuth2(
 router.get("/google", (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
-    scope: ["https://www.googleapis.com/auth/userinfo.email"], // Corrected scope
+    scope: ["https://www.googleapis.com/auth/userinfo.email","https://www.googleapis.com/auth/spreadsheets",], // Corrected scope
     prompt: "consent",
   });
 
@@ -103,4 +103,5 @@ router.get("/auth/google/callback", async (req, res) => {
   }
 });
 
-module.exports = router;
+// module.exports = router;
+module.exports = { router, oauth2Client };

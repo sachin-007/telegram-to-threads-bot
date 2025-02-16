@@ -4,11 +4,12 @@ const axios = require("axios");
 const AdminUser = require("../models/adminUser");
 const logActivity = require("../logActivity");
 const adminUser = require("../models/adminUser");
-require("dotenv").config();
-
 // commented cause now i don't want to start bot on server
 // const bot = require("./bot"); // Import the bot instance
 const loggedInUsers = require("./loggedInUsers"); // Import shared loggedInUsers
+const { oauth2Client } = require("../routes/googleauthRoutes");
+const { google } = require("googleapis");
+require("dotenv").config();
 
 exports.register = async (req, res, bot) => {
   const { username, name, email, password } = req.body;
@@ -267,16 +268,15 @@ const getThreadUserId = async (accessToken) => {
       // Retrieve the user data from the database
       const user = await AdminUser.findOne(
         { email },
-        "threadsUserId access_token tags long_lived_user_access_token"
+        "threadsUserId access_token tags long_lived_user_access_token google_access_token spreadsheet_id"
       );
-  
       if (!user) {
         return res.status(404).json({
           message: "User not found.",
         });
       }
   
-      const { long_lived_user_access_token,access_token, threadsUserId: THREADS_USER_ID, tags = [],google_access_token, google_refresh_token,SPREADSHEET_ID } = user;
+      const { long_lived_user_access_token,access_token, threadsUserId: THREADS_USER_ID, tags = [],google_access_token, google_refresh_token,spreadsheet_id } = user;
   
       if (!access_token||!long_lived_user_access_token) {
         return res.status(400).json({
@@ -340,14 +340,16 @@ const getThreadUserId = async (accessToken) => {
            
           if (google_access_token) {
             try {
+              const SHEET_NAME = "Posts"; // Ensure this sheet exists
+              const range = SHEET_NAME; // Use just the sheet name for appending
               // Set OAuth token
               oauth2Client.setCredentials({ access_token: google_access_token });
   
               const sheets = google.sheets({ version: "v4", auth: oauth2Client });
   
               await sheets.spreadsheets.values.append({
-                spreadsheetId: SPREADSHEET_ID,
-                range: "Posts!A:E",
+                spreadsheetId: spreadsheet_id,
+                range: range,
                 valueInputOption: "RAW",
                 insertDataOption: "INSERT_ROWS",
                 requestBody: {
@@ -359,7 +361,7 @@ const getThreadUserId = async (accessToken) => {
   
               logActivity("✅ Data added to Google Sheets successfully.");
             } catch (sheetError) {
-              logActivity("❌ Error appending to Google Sheets:", sheetError);
+              logActivity(`❌ Error appending to Google Sheets:${sheetError}`, sheetError);
             }
           } else {
             logActivity("⚠ Google access token not found. Skipping Google Sheets update.");
