@@ -23,7 +23,7 @@ module.exports = (bot) => {
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const message = `
-  Welcome to the Threads TEST Bot! :
+  Welcome to the Threads Bot! 🤖 Here's what you can do:
 
   1️⃣ **Register**: Register a new account with a username, name, email, and password. 
      Command: \`/register <username> <name> <email> <password>\`
@@ -123,7 +123,7 @@ module.exports = (bot) => {
     try {
       // Sending a POST request with the data
       const response = await axios.post(
-        "https://tmethreadbot.onrender.com/api/auth/register",
+        `${process.env.SERVER_HOST}/api/auth/register`,
         {
           username,
           name,
@@ -141,16 +141,13 @@ module.exports = (bot) => {
 
   bot.onText(/\/login (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
-    console.log("chat id is "+chatId);
     const messageParts = match[1].split(" "); // Expecting the format: "email password"
     const [email, password] = messageParts;
-
-    logActivity("Attempting login with:", email, password);
 
     try {
       // Replace with the actual backend URL
       const response = await axios.post(
-        "https://tmethreadbot.onrender.com/api/auth/login",
+        `${process.env.SERVER_HOST}/api/auth/login`,
         {
           email,
           password,
@@ -159,10 +156,10 @@ module.exports = (bot) => {
 
       // Send success message if login is successful
       if (response.status == 200) {
-        loggedInUsers[chatId] = { email, loggedIn: true };
+        loggedInUsers[chatId] = { ...loggedInUsers[chatId],email, loggedIn: true,isXTweeterAuthed:false,isThreadAuthed:false };
         // Save chatId in the database associated with this user
         await axios.post(
-          "https://tmethreadbot.onrender.com/api/auth/save-chatid",
+          `${process.env.SERVER_HOST}/api/auth/save-chatid`,
           {
             email,
             chatId,
@@ -179,76 +176,58 @@ module.exports = (bot) => {
   });
 
   // /auth command to initiate the authorization process
-  bot.onText(/\/auth/, (msg) => {
+  bot.onText(/\/threadauth/, async (msg) => {
     const chatId = msg.chat.id;
-    const user = loggedInUsers[chatId];
-
-    // Ensure the user is logged in before authorizing
+    const user = await loggedInUsers[chatId];
+    
     if (!user || !user.loggedIn) {
       bot.sendMessage(chatId, "Please log in before authorizing the bot.");
       return;
     }
+  
+    if (!user.email) {
+      bot.sendMessage(chatId, "No email found for the logged-in user.");
+      return;
+    }
+        
+    const THREAD_APP_ID = process.env.THREAD_APP_ID;
+    const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
+    // authentication below 
 
-    // Prompt for THREAD_APP_ID and start the authorization process
-    bot.sendMessage(chatId, "Please enter your THREAD_APP_ID:");
-    authSteps[chatId] = { step: "awaiting_app_id" };
-  });
-
-  // Handle messages to capture THREAD_APP_ID and THREADS_APP_SECRET from the user
-  bot.on("message", async (msg) => {
-    const chatId = msg.chat.id;    
-    const user = loggedInUsers[chatId];
-    const userStep = authSteps[chatId] || {};
-
-    // Capture THREAD_APP_ID
-    if (userStep.step === "awaiting_app_id") {
-      authSteps[chatId].THREAD_APP_ID = msg.text;
-      bot.sendMessage(chatId, "Please enter your THREADS_APP_SECRET:");
-      authSteps[chatId].step = "awaiting_app_secret";
-
-      // Capture THREADS_APP_SECRET and proceed with the authorization request
-    } else if (userStep.step === "awaiting_app_secret") {
-      authSteps[chatId].THREADS_APP_SECRET = msg.text;
-      const { THREAD_APP_ID, THREADS_APP_SECRET } = authSteps[chatId];
-      const email = user.email;
-
-      try {
-        // Send GET request to your server with THREAD_APP_ID, THREADS_APP_SECRET, and email
-        const response = await axios({
-          method: "get",
-          url: "https://tmethreadbot.onrender.com/api/auth/auth",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          data: {
-            email,
-            THREAD_APP_ID,
-            THREADS_APP_SECRET,
-          },
-        });
-        // If the server provides an authorization URL, send it to the user
-        if (response.status === 200 && response.data.authUrl) {
-          bot.sendMessage(
-            chatId,
-            `Please authorize the application by visiting this URL: ${response.data.authUrl}`
-          );
-        } else {
-          bot.sendMessage(
-            chatId,
-            "Authorization failed. Please check your credentials."
-          );
-        }
-      } catch (error) {
-        // logActivity("Error initiating OAuth:", error);
+    try {
+      // Send GET request to your server with THREAD_APP_ID, THREADS_APP_SECRET, and email
+      const response = await axios({
+        method: "get",
+        url: `${process.env.SERVER_HOST}/api/auth/auth`,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: {
+          email:user.email,
+          THREAD_APP_ID,
+          THREADS_APP_SECRET,
+        },
+      });
+      // If the server provides an authorization URL, send it to the user
+      if (response.status === 200 && response.data.authUrl) {
         bot.sendMessage(
           chatId,
-          "An error occurred while initiating OAuth. Please try again."
+          `Please authorize the application by visiting this URL: ${response.data.authUrl}`
+        );
+      } else {
+        bot.sendMessage(
+          chatId,
+          "Authorization failed. Please check your credentials."
         );
       }
-
-      // Clean up the step tracking for this user
-      delete authSteps[chatId];
+    } catch (error) {
+      logActivity("Error initiating OAuth:", error);
+      bot.sendMessage(
+        chatId,
+        "An error occurred while initiating OAuth. Please try again."
+      );
     }
+    
   });
 
   // Endpoint to receive notification from the server with access token and send to Telegram user
@@ -344,10 +323,13 @@ module.exports = (bot) => {
     const chatId = msg.chat.id;
     const user = loggedInUsers[chatId];
     const email = user?.email;
+    const isThreadAuthed = user?.isThreadAuthed;
+    const isXTweeterAuthed = user?.isXTweeterAuthed;
+
 
     // Check if the user is logged in and authorized
-    logActivity(`Sachin Email: ${email}`);
-    // if (!user || !user.loggedIn || !user.accessToken) {
+    // logActivity(`User: ${JSON.stringify(user)}, Email: ${email}`);
+    // if (!user || !user.loggedIn ) {
     //   bot.sendMessage(
     //     chatId,
     //     "You must be logged in and authorized to use this feature. Please complete the login and authorization steps."
@@ -358,18 +340,14 @@ module.exports = (bot) => {
     // Check if the message contains an image
     if (msg.photo) {
       const caption = msg.caption || ""; // Get caption if exists
-      logActivity(`Received caption: ${caption}`); // Log the caption
 
       // Get the file_id of the largest image
       const photo = msg.photo[msg.photo.length - 1];
-      logActivity(`Received photo object: ${JSON.stringify(photo)}`); // Log the photo object
       const fileId = photo.file_id;
-      logActivity(`Received file_id: ${fileId}`); // Log the file_id
 
       // Get the file URL using Telegram API
       try {
-        const fileUrl = await bot.getFileLink(fileId);
-        logActivity(`File URL retrieved: ${fileUrl}`); // Log the retrieved file URL
+        const fileUrl = encodeURIComponent(await bot.getFileLink(fileId));
 
         // Prepare data to send to your backend
         const postData = {
@@ -378,19 +356,51 @@ module.exports = (bot) => {
           email: email,
         };
 
-        logActivity("data to be post is "+JSON.stringify(postData));
+        console.log(postData);
 
         if (postData.imageUrl && postData.caption && postData.email) {
-          const backendApiUrl =
-            "http://localhost:5000/api/thread/post";
-          // Send data to your backend
-          const response = await axios.post(backendApiUrl, postData);
+          isThreadPostSuccess = false;
+          isTweeterPostSuccess = false;
+          if(isThreadAuthed){
+            const backendApiUrl =
+              `${process.env.SERVER_HOST}/api/thread/post`;
+            // Send data to your backend
+            const response = await axios.post(backendApiUrl, postData);
+            // Respond to Telegram chat
+            bot.sendMessage(
+              chatId,
+              "Image and caption forwarded successfully to Thread!"
+            );
+            isThreadPostSuccess = true;
+          }
+          if(true){
+            const backendApiUrl =
+              `${process.env.SERVER_HOST}/api/twitterx/posttotweet`;
+            // Send data to your backend
+            const response = await axios.post(backendApiUrl, postData);
+            // Respond to Telegram chat
+            bot.sendMessage(
+              chatId,
+              "Image and caption forwarded successfully to Twitter(X)!"
+            );
+            isTweeterPostSuccess = true;
+          }
 
-          // Respond to Telegram chat
-          bot.sendMessage(
-            chatId,
-            "Image and caption forwarded successfully to Thread!"
-          );
+          if(isThreadPostSuccess || isTweeterPostSuccess){
+            const backendApiUrl =
+              `${process.env.SERVER_HOST}/api/inserttosheet/posts`;
+            // Send data to your backend
+            const response = await axios.post(backendApiUrl, postData);
+
+            if (response.status === 200) {
+              console.log("✅ Data successfully sent to backend and stored in Google Sheets.");
+  
+              // Clear the stored data for this chatId
+              delete googleSpreadSheetTrack[chatId]; 
+              console.log(`🗑 Cleared googleSpreadSheetTrack for chatId: ${chatId}`);
+          }
+          }
+
         } else {
           bot.sendMessage(chatId, "Only caption or text or image is received.");
         }
@@ -430,7 +440,7 @@ module.exports = (bot) => {
       // Make an API call to the backend to update the tags
       try {
         const response = await axios.post(
-          "https://tmethreadbot.onrender.com/api/auth/updateTags",
+          `${process.env.SERVER_HOST}/api/auth/updateTags`,
           {
             email: email,
             tags: tags,
@@ -450,5 +460,27 @@ module.exports = (bot) => {
       }
     });
   });
+
+  bot.onText(/\/xauth/, async (msg) => {
+    const chatId = msg.chat.id;
+    const user = await loggedInUsers[chatId];
+    if (!user || !user.loggedIn) {
+      bot.sendMessage(chatId, "Please log in before authorizing the bot.");
+      return;
+    }
+    const state = encodeURIComponent(user.email); // Encode email for safety
+    
+    const authTwitterxUri = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${process.env.SERVER_HOST}${process.env.X_REDIRECT_URI}&scope=tweet.read%20tweet.write%20users.read%20offline.access&state=${state}&code_challenge=challenge&code_challenge_method=plain`;
+    
+    // scope with media.upload
+    // const authTwitterxUri = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${process.env.SERVER_HOST}${process.env.X_REDIRECT_URI}&scope=tweet.read%20tweet.write%20users.read%20media.upload%20offline.access&state=${state}&code_challenge=challenge&code_challenge_method=plain`;
+
+
+    bot.sendMessage(
+      chatId,
+      `Please authorize the application by visiting this URL: ${authTwitterxUri}`
+    );    
+  });
+
 };
 // module.exports = bot;

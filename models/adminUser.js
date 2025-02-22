@@ -21,6 +21,8 @@ const adminUserSchema = new mongoose.Schema(
     threadsUserId: { type: String },
     user_id: String,
     chatId: String,
+    x_v1_access_token :String,
+    x_v1_access_token_secret :String,
     logs: [
       {
         logMessage: String,

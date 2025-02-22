@@ -9,6 +9,9 @@ const adminUser = require("../models/adminUser");
 const loggedInUsers = require("./loggedInUsers"); // Import shared loggedInUsers
 const { oauth2Client } = require("../routes/googleauthRoutes");
 const { google } = require("googleapis");
+const googleSpreadSheetTrack = require("../utils/googleSpreadsheetTrack");
+const fs = require("fs");
+const path = require("path");
 require("dotenv").config();
 
 exports.register = async (req, res, bot) => {
@@ -182,7 +185,7 @@ exports.handleCallback = async (req, res, bot) => {
     // commented for bot offline
     // Send the access token to the user via Telegram
     if (chatId) {
-      loggedInUsers[chatId] = { email, loggedIn: true, accessToken: true,isThreadAuthed: true };
+      loggedInUsers[chatId] = { ...loggedInUsers[chatId] ,email, loggedIn: true, accessToken: true,isThreadAuthed: true };
 
       await bot.sendMessage(chatId, `Authorization successful!`);
     } else {
@@ -269,13 +272,14 @@ const getThreadUserId = async (accessToken) => {
       // Retrieve the user data from the database
       const user = await AdminUser.findOne(
         { email },
-        "threadsUserId access_token tags long_lived_user_access_token google_access_token spreadsheet_id"
+        "threadsUserId access_token tags long_lived_user_access_token google_access_token spreadsheet_id chatId"
       );
       if (!user) {
         return res.status(404).json({
           message: "User not found.",
         });
       }
+      const chatId = user.chatId;
   
       const { long_lived_user_access_token,access_token, threadsUserId: THREADS_USER_ID, tags = [],google_access_token, google_refresh_token,spreadsheet_id } = user;
   
@@ -294,6 +298,7 @@ const getThreadUserId = async (accessToken) => {
 
       let decodedImageUrl;
       let decodedCaption = caption;
+      const tempImagePath = path.resolve(__dirname, "tempimgac.jpg");
       try {
           // Decode the image URL
           decodedImageUrl = decodeURIComponent(imageUrl);
@@ -304,6 +309,25 @@ const getThreadUserId = async (accessToken) => {
               error: decodeError.message,
           });
       }
+
+      try {
+        // Download the image
+        const response = await axios({
+            url: decodedImageUrl,
+            method: "GET",
+            responseType: "arraybuffer", // Get raw binary data
+        });
+    
+        // Convert to Base64
+        const base64Image = Buffer.from(response.data, "binary").toString("base64");
+        
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to download image at authController.",
+            error: error.message,
+        });
+    }
+    
 
   
       var captionWithTags =
@@ -338,63 +362,65 @@ const getThreadUserId = async (accessToken) => {
   
         if (publishResponse.status === 200) {
           logActivity("Post created and published successfully.");
-           
-          if (google_access_token) {
-            try {
-              const SHEET_NAME = "Posts"; // Ensure this sheet exists
-              const range = SHEET_NAME; // Use just the sheet name for appending
-              // Set OAuth token
-              oauth2Client.setCredentials({ access_token: google_access_token });
+           if (chatId) {
+            googleSpreadSheetTrack[chatId] = { email:email,ImageBaseFormat:base64Image, ThreadimageUrl: decodedImageUrl, ThreadCaption:captionWithTags,ThreadResponse:publishResponse.data, Threadstatus: "Success" };
+           }
+          // if (google_access_token) {
+          //   try {
+          //     const SHEET_NAME = "Posts"; // Ensure this sheet exists
+          //     const range = SHEET_NAME; // Use just the sheet name for appending
+          //     // Set OAuth token
+          //     oauth2Client.setCredentials({ access_token: google_access_token });
   
-              const sheets = google.sheets({ version: "v4", auth: oauth2Client });
+          //     const sheets = google.sheets({ version: "v4", auth: oauth2Client });
   
-              await sheets.spreadsheets.values.append({
-                spreadsheetId: spreadsheet_id,
-                range: range,
-                valueInputOption: "RAW",
-                insertDataOption: "INSERT_ROWS",
-                requestBody: {
-                  values: [
-                    [new Date().toISOString(), email, decodedImageUrl, captionWithTags, "Success"]
-                  ],
-                },
-              });
+          //     await sheets.spreadsheets.values.append({
+          //       spreadsheetId: spreadsheet_id,
+          //       range: range,
+          //       valueInputOption: "RAW",
+          //       insertDataOption: "INSERT_ROWS",
+          //       requestBody: {
+          //         values: [
+          //           [new Date().toISOString(), email, decodedImageUrl, captionWithTags, "Success"]
+          //         ],
+          //       },
+          //     });
   
-              logActivity("✅ Data added to Google Sheets successfully.");
-            } catch (error) {
-              // ✅ Check if error is due to invalid credentials
-              if (
-                error.response &&
-                error.response.status === 401 &&
-                error.response.data.error === "invalid_grant" &&
-                !retry
-              ) {
-                logActivity("🔄 Access token expired. Refreshing token...");
+          //     logActivity("✅ Data added to Google Sheets successfully.");
+          //   } catch (error) {
+          //     // ✅ Check if error is due to invalid credentials
+          //     if (
+          //       error.response &&
+          //       error.response.status === 401 &&
+          //       error.response.data.error === "invalid_grant" &&
+          //       !retry
+          //     ) {
+          //       logActivity("🔄 Access token expired. Refreshing token...");
           
-                // ✅ Refresh the token and retry once
-                const newAccessToken = await refreshGoogleAccessToken(user);
-                oauth2Client.setCredentials({ access_token: newAccessToken });
+          //       // ✅ Refresh the token and retry once
+          //       const newAccessToken = await refreshGoogleAccessToken(user);
+          //       oauth2Client.setCredentials({ access_token: newAccessToken });
           
-                retry = true;
+          //       retry = true;
           
-                const sheets = google.sheets({ version: "v4", auth: oauth2Client });
+          //       const sheets = google.sheets({ version: "v4", auth: oauth2Client });
           
-                await sheets.spreadsheets.values.append({
-                  spreadsheetId: user.spreadsheet_id,
-                  range: "Posts",
-                  valueInputOption: "RAW",
-                  insertDataOption: "INSERT_ROWS",
-                  requestBody: { values },
-                });
+          //       await sheets.spreadsheets.values.append({
+          //         spreadsheetId: user.spreadsheet_id,
+          //         range: "Posts",
+          //         valueInputOption: "RAW",
+          //         insertDataOption: "INSERT_ROWS",
+          //         requestBody: { values },
+          //       });
           
-                logActivity("✅ Data added to Google Sheets successfully after token refresh.");
-              } else {
-                throw error;
-              }
-            }
-          } else {
-            logActivity("⚠ Google access token not found. Skipping Google Sheets update.");
-          }
+          //       logActivity("✅ Data added to Google Sheets successfully after token refresh.");
+          //     } else {
+          //       throw error;
+          //     }
+          //   }
+          // } else {
+          //   logActivity("⚠ Google access token not found. Skipping Google Sheets update.");
+          // }
           return res.status(200).json({
             message: "Post created and published successfully!",
             data: publishResponse.data,

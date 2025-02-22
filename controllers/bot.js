@@ -8,9 +8,10 @@ app.use(express.json());
 const loggedInUsers = require("./loggedInUsers"); // Import shared loggedInUsers
 const logActivity = require("../logActivity");
 const authSteps = {}; // Temporary storage for tracking authorization steps
-
+const AdminUser = require("../models/adminUser");
 // logActivity('',"Telegram bot started.");
 logActivity("Telegram bot inside the bot.js.");
+const googleSpreadSheetTrack = require("../utils/googleSpreadsheetTrack");
 
 module.exports = (bot) => {
   bot.on("polling_error", (error) => {
@@ -41,6 +42,8 @@ module.exports = (bot) => {
 
     4️⃣ **Post**: Once you're authorized, you can post images and captions to your Threads account.
   Send an image with a caption, and the bot will forward it to your Threads account.
+
+    5️⃣ **autherizations**: \`/xauth\` to authorize Twitter V1 (X) and \`/googleauth\` to authorize Google. \`/xoneauth\` to authorize Twitter V1 (X).
 
     🔑 **Important Notes**:
   - You must be logged in to authorize the bot and make posts.
@@ -156,7 +159,7 @@ module.exports = (bot) => {
 
       // Send success message if login is successful
       if (response.status == 200) {
-        loggedInUsers[chatId] = { email, loggedIn: true,isXTweeterAuthed:false,isThreadAuthed:false };
+        loggedInUsers[chatId] = { ...loggedInUsers[chatId] ,email, loggedIn: true,isXTweeterAuthed:false,isThreadAuthed:false };
         // Save chatId in the database associated with this user
         await axios.post(
           `${process.env.SERVER_HOST}/api/auth/save-chatid`,
@@ -359,6 +362,8 @@ module.exports = (bot) => {
         console.log(postData);
 
         if (postData.imageUrl && postData.caption && postData.email) {
+          isThreadPostSuccess = false;
+          isTweeterPostSuccess = false;
           if(isThreadAuthed){
             const backendApiUrl =
               `${process.env.SERVER_HOST}/api/thread/post`;
@@ -369,6 +374,7 @@ module.exports = (bot) => {
               chatId,
               "Image and caption forwarded successfully to Thread!"
             );
+            isThreadPostSuccess = true;
           }
           if(isXTweeterAuthed){
             const backendApiUrl =
@@ -380,6 +386,22 @@ module.exports = (bot) => {
               chatId,
               "Image and caption forwarded successfully to Twitter(X)!"
             );
+            isTweeterPostSuccess = true;
+          }
+
+          // if any post successfull then only send to google sheet
+          if(isThreadPostSuccess || isTweeterPostSuccess){
+            const backendApiUrl =
+              `${process.env.SERVER_HOST}/api/inserttosheet/posts`;
+            // Send data to your backend
+            const response = await axios.post(backendApiUrl, postData);
+
+            if (response.status === 200) {
+              console.log("✅ Data successfully sent to backend and stored in Google Sheets.");
+              // Clear the stored data for this chatId
+              delete googleSpreadSheetTrack[chatId]; 
+              console.log(`🗑 Cleared googleSpreadSheetTrack for chatId: ${chatId}`);
+            }
           }
 
         } else {
@@ -453,15 +475,94 @@ module.exports = (bot) => {
     
     const authTwitterxUri = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${process.env.SERVER_HOST}${process.env.X_REDIRECT_URI}&scope=tweet.read%20tweet.write%20users.read%20offline.access&state=${state}&code_challenge=challenge&code_challenge_method=plain`;
     
-    // scope with media.upload
-    // const authTwitterxUri = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${process.env.SERVER_HOST}${process.env.X_REDIRECT_URI}&scope=tweet.read%20tweet.write%20users.read%20media.upload%20offline.access&state=${state}&code_challenge=challenge&code_challenge_method=plain`;
-
-
     bot.sendMessage(
       chatId,
-      `Please authorize the application by visiting this URL: ${authTwitterxUri}`
+      `Please authorize Twitter (X) V2 by visiting this URL: ${authTwitterxUri}`
     );    
   });
+  
+
+  bot.onText(/\/xoneauth/, async (msg) => {
+    const chatId = msg.chat.id;
+    const user = await loggedInUsers[chatId];
+
+    if (!user || !user.loggedIn) {
+        bot.sendMessage(chatId, "⚠ Please log in before authorizing the bot.");
+        return;
+    }
+  
+  const authTwitterxUri = `${process.env.SERVER_HOST}/api/twitterx/auth?email=${user.email}`;
+  console.log(`escapedUri: ${authTwitterxUri}`);
+  
+  bot.sendMessage(
+      chatId,
+      `🔗 Please authorize Twitter \\(X\\) V1 by visiting this URL: [Click here](${authTwitterxUri})`,
+      { parse_mode: "MarkdownV2" }
+  );
+  
+});
+
+// bot.onText(/\/googleauth/, async (msg) => {
+//     const chatId = msg.chat.id;
+//     const user = await loggedInUsers[chatId];
+
+//     if (!user || !user.loggedIn) {
+//         bot.sendMessage(chatId, "⚠ Please log in before authorizing the bot.");
+//         return;
+//     }
+
+//     const authGoogleUri = `${process.env.SERVER_HOST}/api/google`;
+
+//     bot.sendMessage(
+//       chatId,
+//       `🔗 Please authorize Google by visiting this URL: [Click here](${authGoogleUri.replace(/\./g, "\\.")})`,
+//       { parse_mode: "MarkdownV2" }
+//   );
+  
+// });
+
+
+bot.onText(/\/googleauth/, async (msg) => {
+    const chatId = msg.chat.id;
+    const user = await loggedInUsers[chatId];
+
+    if (!user || !user.loggedIn) {
+        bot.sendMessage(chatId, "⚠ Please log in before authorizing the bot.");
+        return;
+    }
+
+    bot.sendMessage(chatId, "📧 Please enter your secondary email:");
+    
+    // Set the bot in 'waiting for email' mode
+    bot.once("message", async (emailMsg) => {
+        const enteredemail = emailMsg.text.trim();
+
+        console.log(`Email entered: ${enteredemail}`);
+
+        // Save to database
+        try {
+            await AdminUser.updateOne(
+                { chatId: chatId }, // Assuming chat_id is stored in DB
+                { $set: { secondary_email: enteredemail } },
+                { upsert: true }
+            );
+
+            // Send the Google auth link
+            const authGoogleUri = `${process.env.SERVER_HOST}/api/google`;
+            bot.sendMessage(
+                chatId,
+                `✅ Email saved! Now, authorize Google here: [Click here](${authGoogleUri})`,
+                { parse_mode: "Markdown" }
+            );
+            console.log(`Email saved successfully.${authGoogleUri}`);
+        } catch (error) {
+            console.error("Database error:", error);
+            bot.sendMessage(chatId, "⚠ Failed to save email. Please try again.");
+        }
+    });
+});
+
+
 
 };
 // module.exports = bot;
