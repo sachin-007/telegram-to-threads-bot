@@ -20,7 +20,7 @@ router.get("/callback", (req, res) =>
 
 // following for the authentication of the user with the twitter with V0.1
 const oauth = OAuth({
-    consumer: { key: process.env.X_CONSUMER_KEY, secret: process.env.x_CONSUMER_KEY_SECRET },
+    consumer: { key: process.env.X_CONSUMER_KEY, secret: process.env.X_CONSUMER_KEY_SECRET },
     signature_method: 'HMAC-SHA1',
     hash_function(base_string, key) {
       return crypto.createHmac('sha1', key).update(base_string).digest('base64');
