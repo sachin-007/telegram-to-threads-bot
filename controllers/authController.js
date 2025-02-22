@@ -13,6 +13,7 @@ const googleSpreadSheetTrack = require("../utils/googleSpreadsheetTrack");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
+let base64Image; 
 
 exports.register = async (req, res, bot) => {
   const { username, name, email, password } = req.body;
@@ -319,7 +320,7 @@ const getThreadUserId = async (accessToken) => {
         });
     
         // Convert to Base64
-        const base64Image = Buffer.from(response.data, "binary").toString("base64");
+        base64Image = Buffer.from(response.data, "binary").toString("base64");
         
     } catch (error) {
         return res.status(500).json({
