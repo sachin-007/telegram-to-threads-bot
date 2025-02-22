@@ -467,6 +467,7 @@ module.exports = (bot) => {
   bot.onText(/\/xauth/, async (msg) => {
     const chatId = msg.chat.id;
     const user = await loggedInUsers[chatId];
+    loggedInUsers[chatId] = { ...loggedInUsers[chatId],isXTweeterAuthed:true, };
     if (!user || !user.loggedIn) {
       bot.sendMessage(chatId, "Please log in before authorizing the bot.");
       return;
@@ -485,6 +486,7 @@ module.exports = (bot) => {
   bot.onText(/\/xoneauth/, async (msg) => {
     const chatId = msg.chat.id;
     const user = await loggedInUsers[chatId];
+    loggedInUsers[chatId] = { ...loggedInUsers[chatId],isXTweeterAuthed:true, };
 
     if (!user || !user.loggedIn) {
         bot.sendMessage(chatId, "⚠ Please log in before authorizing the bot.");
