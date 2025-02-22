@@ -440,7 +440,7 @@ const getThreadUserId = async (accessToken) => {
         });
       }
     } catch (error) {
-      logActivity("Unexpected error:", error);
+      logActivity(`Unexpected error while creating the post:${error}`);
       return res.status(500).json({
         message: "An unexpected error occurred while creating the post.",
         error: error.message,

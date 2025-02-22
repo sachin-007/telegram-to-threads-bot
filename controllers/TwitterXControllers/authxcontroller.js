@@ -192,6 +192,7 @@ async function uploadMedia(imagePath) {
     logActivity(`✅ Media Uploaded: ${response.data} `);
     return response.data.media_id_string;
   } catch (error) {
+    logActivity(`❌ Media Upload Failed: ${error.response?.data} || ${error.message} `);
     console.error("❌ Media Upload Failed:", error.response?.data || error.message);
     return null;
   }
@@ -217,6 +218,7 @@ async function createTweet(caption, mediaId,user) {
     console.log("✅ Tweet Posted: ", response.data);
     return response.data.data;
   } catch (error) {
+    logActivity(`❌ Tweet Post Failed: ${error.response?.data} || ${error.message} `);
     console.error("❌ Tweet Post Failed:", error.response?.data || error.message);
     throw error;
   }
