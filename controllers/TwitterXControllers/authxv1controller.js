@@ -2,104 +2,74 @@ const axios = require('axios');
 const qs = require('querystring');
 const AdminUser = require('../../models/adminUser');
 const logActivity = require('../../logActivity');
-const oauthTokenStore  = require('../../utils/oauthTokenStoreEmailTweeterX'); // Import store
-const loggedInUsers = require('../../controllers/loggedInUsers')
-const crypto = require("crypto");
+const oauthTokenStore = require('../../utils/oauthTokenStoreEmailTweeterX'); // Import store
+const loggedInUsers = require('../../controllers/loggedInUsers');
 
 exports.handleCallback = async (req, res, bot) => {
-  // console.log(`logging whole query : ${JSON.stringify(req.query)}`);
-  
-  const { oauth_token, oauth_verifier } = req.query;
+  const { oauth_token: requestToken, oauth_verifier } = req.query;
 
-  if (!oauth_token || !oauth_verifier) {
+  if (!requestToken || !oauth_verifier) {
     logActivity("Missing oauth_token or oauth_verifier in callback request");
     return res.status(400).json({ error: "Invalid request. oauth_token or oauth_verifier is missing." });
   }
 
   try {
-        // Retrieve the email associated with this oauth_token
-        console.log(`oauthTokenStore getting from state is ${JSON.stringify(oauthTokenStore)}`);
-        const email = oauthTokenStore[oauth_token];
-        console.log(`email getting from state is ${email}`);
+    // Retrieve the email associated with this oauth_token
+    const email = oauthTokenStore[requestToken];
+    if (!email) {
+      logActivity(`No email found for oauth_token: ${requestToken}`);
+      return res.status(400).json({ error: "Invalid oauth_token. No associated email found." });
+    }
 
     // Exchange request token for access token
     const tokenExchangeUrl = 'https://api.twitter.com/oauth/access_token';
-
-    const response = await axios.post(tokenExchangeUrl, qs.stringify({
-      oauth_token,
-      oauth_verifier,
-    }), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+    const response = await axios.post(tokenExchangeUrl, qs.stringify({ oauth_token: requestToken, oauth_verifier }), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
-    // Parse Twitter's response (x-www-form-urlencoded)
-    const { oauth_token, oauth_token_secret , user_id, screen_name } = qs.parse(response.data);
+    // Parse Twitter's response (Fix: avoid redeclaring oauth_token)
+    const parsedResponse = qs.parse(response.data);
+    const accessToken = parsedResponse.oauth_token;
+    const accessTokenSecret = parsedResponse.oauth_token_secret;
+    const userId = parsedResponse.user_id;
+    const screenName = parsedResponse.screen_name;
 
-    if (!oauth_token || !oauth_token_secret) {
+    if (!accessToken || !accessTokenSecret) {
       logActivity("Access token or secret not received from Twitter");
       return res.status(500).json({ error: "Failed to retrieve access token." });
     }
 
     // Store in database (MongoDB)
     await AdminUser.updateOne(
-        { email },
-        { 
-            x_v1_user_access_token: oauth_token, 
-            x_v1_user_access_secret: oauth_token_secret, 
-            x_twitter_user_id: user_id, 
-            x_twitter_username: screen_name 
-        },
-        { upsert: true } // Create if doesn't exist
+      { email },
+      {
+        x_v1_user_access_token: accessToken,
+        x_v1_user_access_secret: accessTokenSecret,
+        x_twitter_user_id: userId,
+        x_twitter_username: screenName,
+      },
+      { upsert: true }
     );
 
-    logActivity(`Twitter access token received for user_id: ${user_id}`);
+    logActivity(`Twitter access token received for user_id: ${userId}`);
+
     const user = await AdminUser.findOne({ email }, "chatId");
-    
+
     if (!user) {
       logActivity(`User with email ${email} not found.`);
       return res.status(404).json({ error: "User not found." });
-    }else{
-      console.log(`logging user :: ${user}`);
-      
     }
 
     const chatId = user.chatId;
 
-    // Update user record with access tokens
-    // await AdminUser.findOneAndUpdate({ secondary_email }, { 
-      // });
-      
-      await AdminUser.updateOne(
-        { email }, // Find user by secondary_email
-        {
-          $set: {
-          x_v1_access_token: accessToken, 
-          x_v1_access_token_secret: accessTokenSecret 
-        },
-      },
-      { upsert: true } // ✅ Ensures the fields are created if missing
-    );
-
     // Notify user via bot
     if (chatId) {
-      loggedInUsers[chatId] = { ...loggedInUsers[chatId] ,email, loggedIn: true, isXTweeterAuthed: true };
-      await bot.sendMessage(chatId, `TwitterX Authorization successful! Welcome @${screen_name}`);
+      loggedInUsers[chatId] = { ...loggedInUsers[chatId], email, loggedIn: true, isXTweeterAuthed: true };
+      await bot.sendMessage(chatId, `TwitterX Authorization successful! Welcome @${screenName}`);
       logActivity(`User ${email} successfully logged in with chatId ${chatId}`);
     } else {
       logActivity(`ChatId not found for email: ${email}`);
     }
-
-    // // Fetch user info from Twitter (optional)
-    // const userInfoUrl = "https://api.twitter.com/1.1/account/verify_credentials.json";
-    // const userInfoResponse = await axios.get(userInfoUrl, {
-    //   headers: {
-    //     Authorization: `OAuth oauth_consumer_key="${process.env.X_CONSUMER_KEY}", oauth_token="${accessToken}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${Math.floor(Date.now() / 1000)}", oauth_nonce="${crypto.randomBytes(16).toString('hex')}", oauth_version="1.0"`,
-    //   },
-    // });
-
-    // logActivity(`User Info: ${JSON.stringify(userInfoResponse.data)}`);
 
     res.send("Authentication successful! You can now post tweets.");
   } catch (error) {
