@@ -35,12 +35,24 @@ exports.handleCallback = async (req, res, bot) => {
     });
 
     // Parse Twitter's response (x-www-form-urlencoded)
-    const { oauth_token: accessToken, oauth_token_secret: accessTokenSecret, user_id, screen_name } = qs.parse(response.data);
+    const { oauth_token: access_Token, oauth_token_secret: access_secret, user_id, screen_name } = qs.parse(response.data);
 
-    if (!accessToken || !accessTokenSecret) {
+    if (!access_Token || !access_secret) {
       logActivity("Access token or secret not received from Twitter");
       return res.status(500).json({ error: "Failed to retrieve access token." });
     }
+
+    // Store in database (MongoDB)
+    await AdminUser.updateOne(
+        { email },
+        { 
+            x_v1_user_access_token: access_token, 
+            x_v1_user_access_secret: access_secret, 
+            x_twitter_user_id: user_id, 
+            x_twitter_username: screen_name 
+        },
+        { upsert: true } // Create if doesn't exist
+    );
 
     logActivity(`Twitter access token received for user_id: ${user_id}`);
     const user = await AdminUser.findOne({ email }, "chatId");

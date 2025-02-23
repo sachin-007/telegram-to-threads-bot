@@ -100,12 +100,14 @@ const oauth = OAuth({
   },
 });
 
-async function getOAuthHeaders(url, method = 'POST') {
+async function getOAuthHeaders(url, method = 'POST',user) {
   const request_data = { url, method };
+  chatId = user.chatId;
+  const userclientsecret = await AdminUser.findOne({ chatId }, "x_v1_user_access_token x_v1_user_access_secret");
 
   return oauth.toHeader(oauth.authorize(request_data, {
-    key: process.env.X_AUTH_A_TOKEN,
-    secret: process.env.X_AUTH_A_S_TOKEN,
+    key: userclientsecret.x_v1_user_access_token,
+    secret: userclientsecret.x_v1_user_access_secret,
   }));
 }
 
@@ -143,7 +145,7 @@ exports.postTweetWithImageUrl = async (req, res, bot) => {
     });
 
     // Upload media to Twitter
-    const mediaId = await uploadMedia(tempImagePath);
+    const mediaId = await uploadMedia(tempImagePath,user);
     fs.unlinkSync(tempImagePath); // Remove temp file after upload
 
     if (!mediaId) {
@@ -174,10 +176,10 @@ exports.postTweetWithImageUrl = async (req, res, bot) => {
 };
 
 // Function to upload media to Twitter
-async function uploadMedia(imagePath) {
+async function uploadMedia(imagePath,user) {
   try {
     const url = 'https://upload.twitter.com/1.1/media/upload.json';
-    const headers = await getOAuthHeaders(url, 'POST');
+    const headers = await getOAuthHeaders(url, 'POST',user);
 
     const form = new FormData();
     form.append('media', fs.createReadStream(imagePath));
