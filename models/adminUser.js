@@ -19,6 +19,8 @@ const adminUserSchema = new mongoose.Schema(
     REDIRECT_URI: { type: String },
     THREADS_APP_SECRET: { type: String },
     threadsUserId: { type: String },
+    x_v1_user_access_token: { type: String },
+    x_v1_user_access_secret: { type: String },
     user_id: String,
     chatId: String,
     x_v1_access_token :String,

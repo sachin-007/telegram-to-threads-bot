@@ -21,6 +21,8 @@ exports.handleCallback = async (req, res, bot) => {
       return res.status(400).json({ error: "Invalid oauth_token. No associated email found." });
     }
 
+    logActivity(`Email found for oauth_token: ${email}`);
+
     // Exchange request token for access token
     const tokenExchangeUrl = 'https://api.twitter.com/oauth/access_token';
     const response = await axios.post(tokenExchangeUrl, qs.stringify({ oauth_token: requestToken, oauth_verifier }), {
@@ -29,12 +31,15 @@ exports.handleCallback = async (req, res, bot) => {
 
     // Parse Twitter's response (Fix: avoid redeclaring oauth_token)
     const parsedResponse = qs.parse(response.data);
-    const accessToken = parsedResponse.oauth_token;
-    const accessTokenSecret = parsedResponse.oauth_token_secret;
+    const user_v1_accessToken = parsedResponse.oauth_token;
+    const user_v1_accessTokenSecret = parsedResponse.oauth_token_secret;
     const userId = parsedResponse.user_id;
     const screenName = parsedResponse.screen_name;
 
-    if (!accessToken || !accessTokenSecret) {
+    stringresp = JSON.stringify(parsedResponse);
+    console.log(`stringified response is : ${stringresp}`);
+
+    if (!user_v1_accessToken || !user_v1_accessTokenSecret) {
       logActivity("Access token or secret not received from Twitter");
       return res.status(500).json({ error: "Failed to retrieve access token." });
     }
@@ -43,8 +48,8 @@ exports.handleCallback = async (req, res, bot) => {
     await AdminUser.updateOne(
       { email },
       {
-        x_v1_user_access_token: accessToken,
-        x_v1_user_access_secret: accessTokenSecret,
+        x_v1_user_access_token: user_v1_accessToken,
+        x_v1_user_access_secret: user_v1_accessTokenSecret,
         x_twitter_user_id: userId,
         x_twitter_username: screenName,
       },

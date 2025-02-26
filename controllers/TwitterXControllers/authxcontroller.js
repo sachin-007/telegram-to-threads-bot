@@ -104,6 +104,7 @@ async function getOAuthHeaders(url, method = 'POST',user) {
   const request_data = { url, method };
   chatId = user.chatId;
   const userclientsecret = await AdminUser.findOne({ chatId }, "x_v1_user_access_token x_v1_user_access_secret");
+  logActivity(`stringify userclientsecret: ${JSON.stringify(userclientsecret)}`)
 
   return oauth.toHeader(oauth.authorize(request_data, {
     key: userclientsecret.x_v1_user_access_token,
