@@ -103,28 +103,36 @@ const oauth = OAuth({
 async function getOAuthHeaders(url, method = 'POST',user) {
   const request_data = { url, method };
   chatId = user.chatId;
-  const userclientsecret = await AdminUser.findOne({ chatId }, "x_v1_user_access_token x_v1_user_access_secret");
-  logActivity(`stringify userclientsecret: ${JSON.stringify(userclientsecret)}`)
 
   return oauth.toHeader(oauth.authorize(request_data, {
-    key: userclientsecret.x_v1_user_access_token,
-    secret: userclientsecret.x_v1_user_access_secret,
+    key: user.x_v1_user_access_token,
+    secret: user.x_v1_user_access_secret,
   }));
 }
 
 exports.postTweetWithImageUrl = async (req, res, bot) => {
   try {
-    const { imageUrl, caption, email } = req.body;
+    const { imageUrl, email } = req.body;
+    var caption = req.body.caption || "";
     if (!imageUrl || !caption || !email) {
       return res.status(400).json({ error: "Missing required parameters." });
     }
-
-    const user = await AdminUser.findOne({ email }, "chatId x_access_token");
-  console.log(`stringify upper: ${JSON.stringify(user)}`)
+    
+    const user = await AdminUser.findOne({ email }, "chatId tags x_access_token x_v1_user_access_token x_v1_user_access_secret");
+    console.log(`stringify upper: ${JSON.stringify(user)}`)
     
     if (!user) {
       return res.status(404).json({ error: "User not found." });
     }
+    const tags = user.tags || [];
+    const decodedCaption = caption;
+    var captionWithTags =
+        tags.length > 0 ? `${decodedCaption}\n\n${tags.join(" ")}` : decodedCaption;
+        // Limit the caption to a maximum of 500 characters
+        caption = captionWithTags.substring(0, 280);
+
+        console.log(`caption is : ${caption}`)
+        
 
     const tempImagePath = path.resolve(__dirname, "tempimg.jpg");
 

@@ -44,13 +44,16 @@ exports.addDataToGoogleSheets = async (req, res, bot) => {
             fullData.ImageBaseFormat || "", // Image in Base64
             fullData.ThreadimageUrl || "", // Thread Image URL
             fullData.ThreadCaption || "", // Thread Caption
-            JSON.stringify(fullData.ThreadResponse || {}), // Thread API Response
+            fullData.ThreadResponse?.id || "", // Extract key response fields instead of full JSON
+            fullData.ThreadResponse?.text || "",
             fullData.Threadstatus || "", // Thread Status
             fullData.TweetmediaId || "", // Tweet Media ID
-            JSON.stringify(fullData.TweetResponse || {}), // Tweet API Response
+            fullData.TweetResponse?.id || "",
+            fullData.TweetResponse?.text || "",
             fullData.Tweetstatus || "" // Tweet Status
         ]
     ];
+    
 
     if (chatId) {
         bot.sendMessage(chatId, `✅ Data successfully posted to Google Sheets!`);
